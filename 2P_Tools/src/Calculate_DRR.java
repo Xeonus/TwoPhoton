@@ -87,12 +87,6 @@ public class Calculate_DRR implements PlugIn {
 		ImagePlus img1 = IJ.getImage();
 		stackImgCFP = img1;
 		stackImgCFP.hide();
-		//Case: Convert to 8-bit
-		//if (img1.getBitDepth() != 8){
-		//	hiResImg.show();
-		//	IJ.run("8-bit");
-		//	hiResImg.hide();
-		//}
 		CFPTextField.setText(img1.getTitle());
 		}
 	});
@@ -106,12 +100,6 @@ public class Calculate_DRR implements PlugIn {
 		stackImgYFP = img2;
 		stackImgYFP.hide();
 		workDir = img2.getOriginalFileInfo().directory;
-		//Case: Convert to 8-bit
-		//if (img1.getBitDepth() != 8){
-		//	hiResImg.show();
-		//	IJ.run("8-bit");
-		//	hiResImg.hide();
-		//}
 		YFPTextField.setText(img2.getTitle());
 		}
 	});
@@ -151,10 +139,6 @@ public class Calculate_DRR implements PlugIn {
 	// create Dialog window with default values
 	GenericDialog gd = new GenericDialog("Calculate dRR Tool", IJ.getInstance());
 	gd.addPanel(flowPanel);
-  	//gd.addChoice("Image stack 1: ", img_list, img_list[1]);
- 	// YFP
-	//Dialog.addChoice("Image stack 2: ", img_list, img_list[0]);
-	 // CFP
 	gd.addNumericField("DRR Minimum (%):", 1, 1);
   	gd.addNumericField("DRR Maximum (%):", 7,1);
 	gd.addNumericField("Start for R0:", 5,1);
