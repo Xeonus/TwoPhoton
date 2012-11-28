@@ -277,6 +277,16 @@ public class Calculate_DFF implements PlugIn {
 	deltaFF.show();
 	averageImg.close();
 	
+	/*TODO: Change ROI names
+	RoiManager rm1 = RoiManager.getInstance();
+	Roi [] translatedROIs1 = rm1.getRoisAsArray();
+	int rCount1 = rm1.getCount();
+	for( int i=0; i<rCount1; i++){
+		Roi renameROI = translatedROIs1[i];
+		renameROI.setName(Integer.toString(i));
+	}
+	*/
+	
 	//Only generate a plot if the ROI-Manager instance is not empty
 	if (RoiManager.getInstance() != null){
 		//Create a new folder where the results are stored

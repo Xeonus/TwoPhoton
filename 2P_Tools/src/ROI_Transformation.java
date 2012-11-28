@@ -60,6 +60,7 @@ public class ROI_Transformation implements PlugIn {
 	public ImagePlus channel1;
 	public ImagePlus transdFF;
 	public String resourcePath;
+	private boolean deleteSlice;
 
     
     	public static Roi mergeRois( Roi[] RoiList){
@@ -145,9 +146,9 @@ public class ROI_Transformation implements PlugIn {
 		hiResImg.hide();
 		//Case: Convert to 8-bit
 		if (img1.getBitDepth() != 8){
-			hiResImg.show();
-			IJ.run("8-bit");
-			hiResImg.hide();
+			//hiResImg.show();
+			IJ.run(hiResImg, "8-bit", "");
+			//hiResImg.hide();
 		}
 		highResField.setText(img1.getTitle());
 		}
@@ -164,9 +165,9 @@ public class ROI_Transformation implements PlugIn {
 		lowResStack.hide();
 		//Case: Convert to 8-bit
 		if ( img2.getBitDepth() != 8) {
-			lowResStack.show();
-			IJ.run("8-bit");
-			lowResStack.hide();
+			//lowResStack.show();
+			IJ.run(lowResStack, "8-bit", "");
+			//lowResStack.hide();
 			
 		}
 		lowResField.setText(img2.getTitle());
@@ -212,6 +213,7 @@ public class ROI_Transformation implements PlugIn {
 	gd.addNumericField("Approx._size_of_detection (px):",5, 1);
 	gd.addNumericField("Number_of_neighbors:", 5, 1);
 	gd.addCheckbox("Image Stabilization", imgStabilize);
+	gd.addCheckbox("Delete first slice?", deleteSlice);
 	gd.addMessage("Data analysis:", f);
 	//gd.addCheckbox("Create dF/F of original stack", chkdff);
 	gd.addCheckbox("Create dF/F of registered stack", transdff);
@@ -231,6 +233,9 @@ public class ROI_Transformation implements PlugIn {
 	
 	//Image Stabilization
 	imgStabilize = gd.getNextBoolean();
+	
+	//Delete first slice
+	deleteSlice = gd.getNextBoolean();
 
 	//Create DFF of translated stack
 	transdff = gd.getNextBoolean();
@@ -254,6 +259,13 @@ public class ROI_Transformation implements PlugIn {
 		}	
 	}
 	
+	//Delete first slice in stack:
+	if (deleteSlice == true){
+		IJ.run(lowResStack, "Delete Slice", "");
+		//stackImg.getStack().deleteSlice(1);
+		lowResStack.hide();
+	}
+	
 	//Stabilize Source image stack (movie)
 	if(imgStabilize == true){
 		lowResStack.show();
@@ -262,7 +274,7 @@ public class ROI_Transformation implements PlugIn {
 				"log_transformation_coefficients");
 		lowResStack.hide();
 	}
-
+	
 	//First step: Calculate average pixel intensity image
 	int[] sum;
 	// takes pixels of one slice
@@ -332,11 +344,11 @@ public class ROI_Transformation implements PlugIn {
 		
 		regImg.setTitle("Registration of source and target");
 		IJ.showProgress( 30, 100);
-		hiResImg.show();
+		//hiResImg.show();
 		hiResImg.setRoi(merged);
 		IJ.run(hiResImg, "Create Mask", "");
 		ImagePlus mask = WindowManager.getImage("Mask");
-		//mask.show();
+		mask.show();
 		result.show();
 		
 		//Step 2: Find transformation matrix from source -> low res average
@@ -443,7 +455,7 @@ public class ROI_Transformation implements PlugIn {
 
 		channel1.setTitle("ROI on registered average");
 		//Reset LUT to Grayscales
-		channel1.show();
+		//channel1.show();
 		IJ.run(channel1, "Grays", "");
 		transM.close();
 		IJ.run(finalImage, "Grays", "");
