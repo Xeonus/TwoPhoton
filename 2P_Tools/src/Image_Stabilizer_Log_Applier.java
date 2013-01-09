@@ -29,14 +29,16 @@ public class Image_Stabilizer_Log_Applier implements PlugInFilter {
     int            logLine = 0;
     
     
-    public int setup(String arg, ImagePlus imp) {
+    @Override
+	public int setup(String arg, ImagePlus imp) {
         IJ.register(Image_Stabilizer_Log_Applier.class);
         this.imp = imp;
         return DOES_ALL|STACK_REQUIRED;
     }
 
 
-    public void run(ImageProcessor ip) {
+    @Override
+	public void run(ImageProcessor ip) {
         stack = imp.getStack();
 
         if (stack.isVirtual()) {
@@ -336,7 +338,7 @@ public class Image_Stabilizer_Log_Applier implements PlugInFilter {
             for (int x = 0; x < width; ++x) {
                 double xx = (1.0 + wp[0][0]) * x + wp[0][1] * y + wp[0][2];
                 double yy = wp[1][0] * x + (1.0 + wp[1][1]) * y + wp[1][2];
-                outPixels[p] = (int)ip.getInterpolatedRGBPixel(xx, yy);
+                outPixels[p] = ip.getInterpolatedRGBPixel(xx, yy);
                 ++p;
             } // x
         } // y
@@ -370,7 +372,7 @@ public class Image_Stabilizer_Log_Applier implements PlugInFilter {
         int height = ipOut.getHeight();
         for (int p = 0, y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                outPixels[p] = (int)ip.getInterpolatedRGBPixel(x + wp[0][0], y + wp[1][0]);
+                outPixels[p] = ip.getInterpolatedRGBPixel(x + wp[0][0], y + wp[1][0]);
                 ++p;
             } // x
         } // y

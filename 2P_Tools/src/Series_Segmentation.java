@@ -141,6 +141,7 @@ public class Series_Segmentation implements PlugIn {
 	}
 	
 	//Execute PlugIn Procedures
+	@Override
 	public void run (String arg){
 		
 		//Check if Plugin runs on Windows.
@@ -231,6 +232,7 @@ public class Series_Segmentation implements PlugIn {
 			 //directoryField.setText("Output directory path");
 			 
 			 loadDirectoryButton.addActionListener(new ActionListener() {
+					@Override
 					public void actionPerformed(ActionEvent e) {
 						IJ.showStatus("Choose output Direcotry");
 						DirectoryChooser dirC = new DirectoryChooser("Select output path");

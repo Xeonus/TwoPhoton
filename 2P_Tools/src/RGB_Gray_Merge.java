@@ -5,6 +5,7 @@ import ij.gui.*;
 
 public class RGB_Gray_Merge implements PlugIn {
 
+	@SuppressWarnings("unused")
 	private ImagePlus imp; 
 	ImagePlus[] image = new ImagePlus[4];
 
@@ -16,6 +17,7 @@ public class RGB_Gray_Merge implements PlugIn {
 	static int  b=3;
 	
 	/* Merges one, two or three 8-bit stacks into an RGB stack. */
+	@Override
 	public void run(String arg) {
 		imp = WindowManager.getCurrentImage();
 		if (GetStacks() && CheckStacks()) {

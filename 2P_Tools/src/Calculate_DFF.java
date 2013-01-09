@@ -41,24 +41,56 @@ public class Calculate_DFF implements PlugIn {
 	private boolean gaussFlag;
 	private boolean imgStabilize;
 	private boolean deleteSlice;
+	public static int defaultImg1=0;
 	private String workDir;
 	private ImageStack mosaicStack;
 	RoiManager roiwin;
 	Font f = new Font("dialog",Font.BOLD,12);
 
 	
-	//Run methods in plugin
+	public void renameROIs(){
+		RoiManager rm = RoiManager.getInstance();
+		int rCount = rm.getCount();
+		for (int i=0; i<rCount; i++){
+			rm.select(i);
+			if(i<=9){
+				rm.runCommand("Rename", "0"+Integer.toString(i));
+			}
+			else {
+				rm.runCommand("Rename", Integer.toString(i));
+			}
+		}
+	}
+	
+	
+	//Execute plugin procedures
+	@Override
 	public void run(String arg) {
+		
+		final int[] idList = WindowManager.getIDList();
+		 
+		 if (idList == null){
+			 IJ.error("At least one image has to be open!");
+			 return;
+		 }
+		 
+		 final String[] imgList = new String[ idList.length];
+		 for (int i=0; i<idList.length; ++i){
+			 imgList[i] = WindowManager.getImage(idList[i]).getTitle();
+		 }
+		 if (defaultImg1 >= imgList.length){
+			 defaultImg1 =0;
+		 }
 
-	final String stackString = "Recorded 2-Photon time series";
+	//final String stackString = "Recorded 2-Photon time series";
 	final String ROIString = "ROIs in .zip-file";
 
 	//Panel to load image stack, generate buttons etc
-	Panel flowPanel = new Panel(new FlowLayout());
-	Panel myLoadPanel = new Panel(new GridLayout(1,1));
-	final Button loadButton = new Button("Load Image stack");
-	Panel myTextPanel = new Panel(new GridLayout(1,1));
-	final TextField stackTextField = new TextField(stackString, 30); 
+	//Panel flowPanel = new Panel(new FlowLayout());
+	//Panel myLoadPanel = new Panel(new GridLayout(1,1));
+	//final Button loadButton = new Button("Load Image stack");
+	//Panel myTextPanel = new Panel(new GridLayout(1,1));
+	//final TextField stackTextField = new TextField(stackString, 30); 
 	
 	//ROI Panel
 	Panel ROIFlowPanel = new Panel(new FlowLayout());
@@ -69,6 +101,7 @@ public class Calculate_DFF implements PlugIn {
 
 
 	//Load buttons
+	/*
 	loadButton.addActionListener(new ActionListener() {
 	public void actionPerformed(ActionEvent e) {
 		IJ.showStatus("loading image stack");
@@ -80,8 +113,10 @@ public class Calculate_DFF implements PlugIn {
 		stackTextField.setText(img1.getTitle());
 		}
 	});
+	*/
 	
 	loadROIButton.addActionListener(new ActionListener() {
+		@Override
 		public void actionPerformed(ActionEvent e) {
 			IJ.showStatus("loading image stack");
 			//close all previous RoiManagers
@@ -99,10 +134,10 @@ public class Calculate_DFF implements PlugIn {
 			}
 		});
 
-	myTextPanel.add(stackTextField);
-	myLoadPanel.add(loadButton);
-	flowPanel.add(myLoadPanel);
-	flowPanel.add(myTextPanel);	
+	//myTextPanel.add(stackTextField);
+	//myLoadPanel.add(loadButton);
+	//flowPanel.add(myLoadPanel);
+	//flowPanel.add(myTextPanel);	
 	
 	ROIButtonPanel.add(loadROIButton);
 	ROITextPanel.add(ROIField);
@@ -111,7 +146,8 @@ public class Calculate_DFF implements PlugIn {
 
 	// create Dialog window with default values
 	GenericDialog gd = new GenericDialog("Calculate dFF Tool", IJ.getInstance());
-	gd.addPanel(flowPanel);
+	gd.addChoice("Image Stack:", imgList, imgList[ defaultImg1 ] );
+	//gd.addPanel(flowPanel);
 	gd.addNumericField("DFF Minimum (%):", 1, 1);
   	gd.addNumericField("DFF Maximum (%):", 7,1);
 	gd.addNumericField("Start for F0:", 5,1);
@@ -140,7 +176,8 @@ public class Calculate_DFF implements PlugIn {
 	//kalmanFlag = gd.getNextBoolean();
 	gaussFlag = gd.getNextBoolean();
 	deleteSlice = gd.getNextBoolean();
-
+	stackImg = WindowManager.getImage( idList[ defaultImg1 = gd.getNextChoiceIndex() ] );
+	workDir = stackImg.getOriginalFileInfo().directory;
 
 
 	
@@ -277,22 +314,14 @@ public class Calculate_DFF implements PlugIn {
 	deltaFF.show();
 	averageImg.close();
 	
-	/*TODO: Change ROI names
-	RoiManager rm1 = RoiManager.getInstance();
-	Roi [] translatedROIs1 = rm1.getRoisAsArray();
-	int rCount1 = rm1.getCount();
-	for( int i=0; i<rCount1; i++){
-		Roi renameROI = translatedROIs1[i];
-		renameROI.setName(Integer.toString(i));
-	}
-	*/
-	
 	//Only generate a plot if the ROI-Manager instance is not empty
 	if (RoiManager.getInstance() != null){
 		//Create a new folder where the results are stored
-		String saveDir = workDir+"/MeasurementsdFF_"+stackImg.getShortTitle();
+		String saveDir = workDir+"/dFF_"+stackImg.getShortTitle();
 		File resultFolder = new File(saveDir);
 		resultFolder.mkdir();
+		//Rename attempt
+		//renameROIs();
 		RoiManager rm = RoiManager.getInstance();
 		Roi [] translatedROIs = rm.getRoisAsArray();
 		int rCount = rm.getCount();

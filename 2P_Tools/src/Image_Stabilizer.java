@@ -93,14 +93,16 @@ public class Image_Stabilizer implements PlugInFilter {
     boolean    logEnabled = false;
     Editor     logEditor = null;
 
-    public int setup(String arg, ImagePlus imp) {
+    @Override
+	public int setup(String arg, ImagePlus imp) {
         IJ.register(Image_Stabilizer.class);
         this.imp = imp;
         return DOES_ALL|STACK_REQUIRED;
     }
 
 
-    public void run(ImageProcessor ip) {
+    @Override
+	public void run(ImageProcessor ip) {
         stack = imp.getStack();
         int stackSize = stack.getSize();
 
@@ -541,8 +543,8 @@ public class Image_Stabilizer implements PlugInFilter {
 
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                jx[y * width + x] = (float)x;
-                jy[y * width + x] = (float)y;
+                jx[y * width + x] = x;
+                jy[y * width + x] = y;
             }
         }
 
@@ -879,9 +881,9 @@ public class Image_Stabilizer implements PlugInFilter {
 
         for (int y = 0; y < height; ++y) {
             // Take forward/backward difference on edges.
-            outPixels[y * width] = (float)(pixels[y * width + 1] - pixels[y * width]);
-            outPixels[y * width + width - 1] = (float)(pixels[y * width + width - 1]
-                                                     - pixels[y * width + width - 2]);
+            outPixels[y * width] = pixels[y * width + 1] - pixels[y * width];
+            outPixels[y * width + width - 1] = pixels[y * width + width - 1]
+                                                     - pixels[y * width + width - 2];
 
             // Take central difference in interior.
             for (int x = 1; x + 1 < width; ++x) {
@@ -901,14 +903,14 @@ public class Image_Stabilizer implements PlugInFilter {
         float[] pixels = (float[])ip.getPixels();
         float[] outPixels = new float[width * height];
 
-        for (int x = 0; x < (int)width; ++x) {
+        for (int x = 0; x < width; ++x) {
             // Take forward/backward difference on edges.
-            outPixels[x] = (float)(pixels[width + x] - pixels[x]);
-            outPixels[(height - 1) * width + x] = (float)(pixels[width * (height - 1) + x]
-                                                        - pixels[width * (height - 2) + x]);
+            outPixels[x] = pixels[width + x] - pixels[x];
+            outPixels[(height - 1) * width + x] = pixels[width * (height - 1) + x]
+                                                        - pixels[width * (height - 2) + x];
 
             // Take central difference in interior.
-            for (int y = 1; y + 1 < (int)height; ++y) {
+            for (int y = 1; y + 1 < height; ++y) {
                 outPixels[y * width + x] = (float)((pixels[width * (y + 1) + x] -
                                                     pixels[width * (y - 1) + x]) * 0.5);
             } // y
@@ -1085,7 +1087,7 @@ public class Image_Stabilizer implements PlugInFilter {
             for (int x = 0; x < width; ++x) {
                 double xx = (1.0 + wp[0][0]) * x + wp[0][1] * y + wp[0][2];
                 double yy = wp[1][0] * x + (1.0 + wp[1][1]) * y + wp[1][2];
-                outPixels[p] = (int)ip.getInterpolatedRGBPixel(xx, yy);
+                outPixels[p] = ip.getInterpolatedRGBPixel(xx, yy);
                 ++p;
             } // x
         } // y
@@ -1119,7 +1121,7 @@ public class Image_Stabilizer implements PlugInFilter {
         int height = ipOut.getHeight();
         for (int p = 0, y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
-                outPixels[p] = (int)ip.getInterpolatedRGBPixel(x + wp[0][0], y + wp[1][0]);
+                outPixels[p] = ip.getInterpolatedRGBPixel(x + wp[0][0], y + wp[1][0]);
                 ++p;
             } // x
         } // y

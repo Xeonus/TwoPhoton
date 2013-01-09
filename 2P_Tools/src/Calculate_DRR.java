@@ -49,26 +49,47 @@ public class Calculate_DRR implements PlugIn {
 	private boolean deleteSlice;
 	private String workDir;
 	private ImageStack mosaicStack;
+	public static int defaultImg1=0;
+	public static int defaultImg2=1;
 	RoiManager roiwin;
-	//private RoiManager imgRois;
 	Font f = new Font("dialog",Font.BOLD,12);
 
 	
 	//Run methods in plugin
+	@Override
 	public void run(String arg) {
+		
+		
+		
+		final int[] idList = WindowManager.getIDList();
+		 
+			if (idList == null || idList.length < 2 ){
+				IJ.error("At least two images have to be open!");
+				return;
+			}
+		 
+		final String[] imgList = new String[ idList.length];
+		for (int i=0; i<idList.length; ++i){
+			 imgList[i] = WindowManager.getImage(idList[i]).getTitle();
+		}
+		 if (defaultImg1 >= imgList.length || defaultImg2 >= imgList.length ){
+			 defaultImg1 =0;
+			 defaultImg2 =1;
+		 }
+		
 
-	final String stackStringCFP = "Image Stack of CFP channel";
-	final String stackStringYFP = "Image Stack of YFP channel";
+	//final String stackStringCFP = "Image Stack of CFP channel";
+	//final String stackStringYFP = "Image Stack of YFP channel";
 	final String ROIString = "ROIs in .zip-file";
 
 	//Panels to load images (GFP and YFP channels)
-	Panel flowPanel = new Panel(new FlowLayout());
-	Panel myLoadPanel = new Panel(new GridLayout(2,1));
-	final Button loadCFPButton = new Button("Load CFP stack");
-	final Button loadYFPButton = new Button ("Load YFP stack");
-	Panel myTextPanel = new Panel(new GridLayout(2,1));
-	final TextField CFPTextField = new TextField(stackStringCFP, 30);
-	final TextField YFPTextField = new TextField(stackStringYFP, 30); 
+	//Panel flowPanel = new Panel(new FlowLayout());
+	//Panel myLoadPanel = new Panel(new GridLayout(2,1));
+	//final Button loadCFPButton = new Button("Load CFP stack");
+	//final Button loadYFPButton = new Button ("Load YFP stack");
+	//Panel myTextPanel = new Panel(new GridLayout(2,1));
+	//final TextField CFPTextField = new TextField(stackStringCFP, 30);
+	//final TextField YFPTextField = new TextField(stackStringYFP, 30); 
 	
 	
 	//ROI Panel
@@ -80,6 +101,7 @@ public class Calculate_DRR implements PlugIn {
 
 
 	//Load buttons
+	/*
 	loadCFPButton.addActionListener(new ActionListener() {
 	public void actionPerformed(ActionEvent e) {
 		IJ.showStatus("loading image stack for CFP");
@@ -103,8 +125,10 @@ public class Calculate_DRR implements PlugIn {
 		YFPTextField.setText(img2.getTitle());
 		}
 	});
+	*/
 	
 	loadROIButton.addActionListener(new ActionListener() {
+		@Override
 		public void actionPerformed(ActionEvent e) {
 			IJ.showStatus("loading image stack");
 			//close all previous RoiManagers
@@ -124,12 +148,12 @@ public class Calculate_DRR implements PlugIn {
 
 
 
-	myTextPanel.add(CFPTextField);
-	myTextPanel.add(YFPTextField);
-	myLoadPanel.add(loadCFPButton);
-	myLoadPanel.add(loadYFPButton);
-	flowPanel.add(myLoadPanel);
-	flowPanel.add(myTextPanel);		
+	//myTextPanel.add(CFPTextField);
+	//myTextPanel.add(YFPTextField);
+	//myLoadPanel.add(loadCFPButton);
+	//myLoadPanel.add(loadYFPButton);
+	//flowPanel.add(myLoadPanel);
+	//flowPanel.add(myTextPanel);		
 	
 	ROIButtonPanel.add(loadROIButton);
 	ROITextPanel.add(ROIField);
@@ -138,7 +162,9 @@ public class Calculate_DRR implements PlugIn {
 
 	// create Dialog window with default values
 	GenericDialog gd = new GenericDialog("Calculate dRR Tool", IJ.getInstance());
-	gd.addPanel(flowPanel);
+	//gd.addPanel(flowPanel);
+    gd.addChoice("CFP Time Series", imgList, imgList[ defaultImg1 ] );        
+    gd.addChoice("YFP Time Series", imgList, imgList[ defaultImg2 ] );
 	gd.addNumericField("DRR Minimum (%):", 1, 1);
   	gd.addNumericField("DRR Maximum (%):", 7,1);
 	gd.addNumericField("Start for R0:", 5,1);
@@ -168,6 +194,12 @@ public class Calculate_DRR implements PlugIn {
 	//kalmanFlag = gd.getNextBoolean();
 	gaussFlag = gd.getNextBoolean();
 	deleteSlice = gd.getNextBoolean();
+	
+	//TODO: duplicate original images and open these at end of session again!
+	//retrieve selected Images:
+	stackImgCFP = WindowManager.getImage( idList[ defaultImg1 = gd.getNextChoiceIndex() ] );
+	stackImgYFP = WindowManager.getImage( idList[ defaultImg2 = gd.getNextChoiceIndex() ] ); 
+	workDir = stackImgCFP.getOriginalFileInfo().directory;
 
 	
 	//Delete first slice in stack:
@@ -317,6 +349,8 @@ public class Calculate_DRR implements PlugIn {
 	//Close temporary images
 	deltaRRWDuplicate.changes = false;
 	deltaRRWDuplicate.close();
+	averageYFP.changes = false;
+	averageYFP.close();
 	
 	channelAvg.changes = false;
 	channelAvg.close();
@@ -328,6 +362,8 @@ public class Calculate_DRR implements PlugIn {
 	int maxRR = (int)deltaRstats.max;
 	IJ.setMinAndMax(deltaRR, minRR, maxRR);
 	deltaRR.show();
+	stackImgCFP.show();
+	stackImgYFP.show();
 	
 	//Only generate a plot if the ROI-Manager instance is not empty
 	if (RoiManager.getInstance() != null){
