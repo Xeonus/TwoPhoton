@@ -292,20 +292,18 @@ public class Volume_Segmentation implements PlugIn {
 		gd.addChoice("Sulforhodamine channel", imgList, imgList[defaultImg2]);
 		// gd.addPanel(flowPanel);
 		// gd.addPanel(radioPanel);
-		gd.addMessage("Enhanced Local Contrast:", f);
+		gd.addMessage("Enhance Contrast for Segmentation:", f);
 		gd.addCheckbox("Apply Enhanced Local Contrast", localContrast);
 		gd.addNumericField("Local Square Length:", 20.0, 1);
 		gd.addNumericField("Saturation Percentage:", 0.4, 1);
-		gd.addMessage("Local Mean Intensity:", f);
-		gd.addCheckbox("Enhance Local Mean Intensity (3D: recommended)",
+		//gd.addMessage("Local Mean Intensity:", f);
+		gd.addCheckbox("Enhance Local Mean Intensity",
 				meanInt);
-		gd.addMessage("Pseudo-flat Field:", f);
+		//gd.addMessage("Pseudo-flat Field:", f);
 		gd.addCheckbox("Apply Pseudo-flat Field Correction", pseudoFlat);
 		gd.addNumericField("Gauss Radius:", 20.0, 1);
 		gd.addPanel(directoryPanel);
-
 		gd.showDialog();
-		// String resourcePath = "/resources/";
 
 		if (gd.wasCanceled())
 			return;
@@ -389,7 +387,6 @@ public class Volume_Segmentation implements PlugIn {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-
 		// Now try to execute the segmentation.exe and give the paths in cmd.exe
 		Runtime rt = Runtime.getRuntime();
 		try {
@@ -413,7 +410,9 @@ public class Volume_Segmentation implements PlugIn {
 		if (!success) {
 			IJ.error("Could not delete segmentation.exe");
 		}
-		// Then execute further processing of the segmented stack.
+		// Inform user where files have been stored
+		//TODO: rename files and store rest in a new folder maybe?
+		IJ.log("Files saved to output folder.");
 		
 	}
 }

@@ -229,11 +229,11 @@ public class ROI_Transformation implements PlugIn {
 
 		// Generate dialog box
 		GenericDialog gd = new GenericDialog(
-				"ROI Transformation and Analysis Tool", IJ.getInstance());
+				"ROI Transformation Tool", IJ.getInstance());
 		gd.addChoice("High-Resolution Image", imgList, imgList[defaultImg1]);
 		gd.addChoice("Time Series (to register)", imgList, imgList[defaultImg2]);
 		gd.addPanel(flowPanel);
-		gd.addMessage("Descriptor Based Image Registration:", f);
+		gd.addMessage("Image Registration:", f);
 		gd.addCheckbox("Perform_Registration", chkItem);
 		gd.addChoice("Registration_Method:", operators, operators[operator]);
 		gd.addNumericField("Approx._size_of_detection (px):", 5, 1);
