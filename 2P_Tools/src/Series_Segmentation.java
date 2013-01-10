@@ -19,6 +19,7 @@ import ij.gui.Roi;
 import ij.io.DirectoryChooser;
 import ij.plugin.ImageCalculator;
 import ij.plugin.PlugIn;
+import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 
@@ -47,6 +48,7 @@ public class Series_Segmentation implements PlugIn {
 	private int localWidth;
 	private double satPerc;
 	private int gaussR;
+	private InputStream stream;
 
 	// OS Checkup
 	public static boolean isWindows() {
@@ -66,8 +68,21 @@ public class Series_Segmentation implements PlugIn {
 	public ImagePlus subtractCreate(ImagePlus img1, ImagePlus img2) {
 		ImageCalculator ic = new ImageCalculator();
 		ImagePlus subImg = ic.run("Subtract create stack", img1, img2);
-		subImg.show();
+		//subImg.show();
 		return subImg;
+	}
+	
+	public void renameROIs() {
+		RoiManager rm = RoiManager.getInstance();
+		int rCount = rm.getCount();
+		for (int i = 0; i < rCount; i++) {
+			rm.select(i);
+			if (i <= 9) {
+				rm.runCommand("Rename", "0" + Integer.toString(i));
+			} else {
+				rm.runCommand("Rename", Integer.toString(i));
+			}
+		}
 	}
 
 	/**
@@ -135,6 +150,8 @@ public class Series_Segmentation implements PlugIn {
 		IJ.run(gaussImg, "Gaussian Blur...", "radius=" + gaussR + " stack");
 		// then subtract that image from img1
 		ImagePlus pseudoFlat = subtractCreate(img1, gaussImg);
+		gaussImg.changes = false;
+		gaussImg.close();
 		return pseudoFlat;
 	}
 
@@ -307,7 +324,7 @@ public class Series_Segmentation implements PlugIn {
 		if (gd.wasCanceled())
 			return;
 
-		// rRetrieve values from dialog box
+		//Retrieve values from dialog box
 		localContrast = gd.getNextBoolean();
 		localWidth = (int) gd.getNextNumber();
 		satPerc = gd.getNextNumber();
@@ -321,29 +338,6 @@ public class Series_Segmentation implements PlugIn {
 		srImg = WindowManager.getImage(idList[defaultImg2 = gd
 				.getNextChoiceIndex()]);
 
-		// Procedures based on radio button chosen:
-		// TODO: find out which order of the procedures gives best results for
-		// contrast enhancements.
-		/*
-		 * if (seriesButton.isSelected() == true){ //TODO: apply stack
-		 * procedure. pass boolean to methods and deal in every method with
-		 * stacks or 3d stackCheck = false; workingImg = subtractCreate(ogbImg,
-		 * srImg); if(localContrast == true){ workingImg =
-		 * enhanceLocalContrast(workingImg, localWidth, satPerc, stackCheck); }
-		 * 
-		 * //Enhance local mean intensity if(meanInt==true){ workingImg =
-		 * subtractMeanIntensity(workingImg); }
-		 * 
-		 * if(pseudoFlat == true){ workingImg = pseudoFlatField(workingImg,
-		 * gaussR); }
-		 * 
-		 * //save time series in analyze format if(saveDir == null){
-		 * IJ.showMessage("no output directory specified"); return; } else{
-		 * workingImg.show(); IJ.run(workingImg, "Enhance Contrast",
-		 * "saturated=0.35"); workingImg.setTitle("TODO"); IJ.run("Analyze... ",
-		 * saveDir+"/TODO.img"); IJ.saveAs(workingImg, "Tiff",
-		 * saveDir+"/enhancedContrast_"+originalName+".tiff"); } } else {
-		 */
 		// 2D segmentation procedures
 		workingImg = subtractCreate(ogbImg, srImg);
 		// Pseudo Flat Field
@@ -362,26 +356,39 @@ public class Series_Segmentation implements PlugIn {
 			return;
 		} else {
 			workingImg.show();
-			IJ.run(workingImg, "Enhance Contrast", "saturated=0.35");
+			//IJ.run(workingImg, "Enhance Contrast", "saturated=0.35");
 			workingImg.setTitle("TODO_" + originalName);
 			IJ.saveAs(workingImg, "Tiff", saveDir + "/TODO_" + originalName
 					+ ".tiff");
 			IJ.saveAs(workingImg, "Tiff", saveDir + "/enhancedContrast_"
 					+ originalName + ".tiff");
 		}
-		// Extract methods at home from ZFIQ.
-		// We try something totally different: Because we store an executable in
-		// a jar file, we need
-		// to copy it from our resources to the destination folder, execute it
-		// from there and then silently
-		// delete it again :)
+
+		/**Extracting exe file from resources/
+		 * Generating input and outputstreams
+		 * Execute 2dsegment in output folder
+		 * Check if segmentation worked and clean up folder
+		**/
 		IJ.log("Executing gradient flow algorithm");
-		InputStream stream = getClass().getResourceAsStream(
+		
+		
+		//if either dimension is below 100px we have to use alternative exe file
+		if(ogbImg.getHeight() < 100 || ogbImg.getWidth() < 100){
+			stream = getClass().getResourceAsStream(
+					"/resources/2dSmallSegment.exe");
+			IJ.log("Executing segmentation for small images");
+		}else{
+			
+			stream = getClass().getResourceAsStream(
 				"/resources/2dsegment.exe");
+		}
+		
+
 		if (stream == null) {
 			IJ.showMessage("Can not find Segmentation Executable!");
 			return;
 		}
+		
 		OutputStream resStreamOut;
 		int readBytes;
 		byte[] buffer = new byte[4096];
@@ -426,11 +433,12 @@ public class Series_Segmentation implements PlugIn {
 		// Clean up directory and continue processing
 		IJ.log("Processing finished");
 		IJ.log("Cleaning up data");
-		//File toDelete = new File(saveDir + "/segmentation.exe");
-		//boolean success = toDelete.delete();
-		//if (!success) {
-			//IJ.error("Could not delete segmentation.exe");
-		//}
+		File toDelete = new File(saveDir + "/segmentation.exe");
+		boolean success = toDelete.delete();
+		if (!success) {
+			IJ.error("Could not delete segmentation.exe");
+		}
+		
 		// Inform user where files have been stored
 		// TODO: rename files and store rest in a new folder maybe?
 		IJ.log("Files saved to output folder.");
@@ -438,15 +446,39 @@ public class Series_Segmentation implements PlugIn {
 		// Extract Regions of interest
 		// Make image Binary and count particles, then show it on the averaged
 		// image
-		// TODO: check if file exists!
-		ImagePlus segmented = IJ.openImage(saveDir + "RegionCellNucleiSegGVF_"
+		File chkSeg = new File(saveDir + "RegionCellNucleiSegGVF_"+"TODO_"+ originalName+ ".tif");
+		if(chkSeg.exists()){
+			ImagePlus segmented = IJ.openImage(saveDir + "RegionCellNucleiSegGVF_"
 				+ "TODO_" + originalName + ".tif");
-		ImagePlus binarySegmentation = makeBinary(segmented);
-		binarySegmentation.show();
-		IJ.run(binarySegmentation, "Analyze Particles...",
+			ImagePlus binarySegmentation = makeBinary(segmented);
+			binarySegmentation.show();
+			IJ.run(binarySegmentation, "Analyze Particles...",
 				"size=0-Infinity circularity=0.00-1.00 show=Nothing include add");
+			
+			binarySegmentation.changes = false;
+			binarySegmentation.close();
+			
+			//Rename ROIs
+			renameROIs();
+			//and show them in the original image
+			workingImg.changes = false;
+			workingImg.close();
+			ogbImg.show();
+			IJ.log("RoiSet.zip has been saved to output folder");
+			RoiManager rm = RoiManager.getInstance();
+			rm.runCommand("Save", saveDir+originalName+"_RoiSet.zip");
+			rm.runCommand("Show All");
+			
+			
+			
+			
+		} else {
+			IJ.error("The segmentation files have not been saved!");
+			return;
+		}
 		
 		//Show ROIs on original image
+		
 
 	}
 }

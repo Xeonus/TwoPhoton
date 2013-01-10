@@ -84,8 +84,8 @@ public class Volume_Segmentation implements PlugIn {
 	public ImagePlus subtractCreate(ImagePlus img1, ImagePlus img2) {
 		ImageCalculator ic = new ImageCalculator();
 		ImagePlus subImg = ic.run("Subtract create stack", img1, img2);
-		subImg.show();
-		subImg.hide();
+		//subImg.show();
+		//subImg.hide();
 		return subImg;
 	}
 
@@ -308,7 +308,7 @@ public class Volume_Segmentation implements PlugIn {
 		if (gd.wasCanceled())
 			return;
 
-		// rRetrieve values from dialog box
+		// Retrieve values from dialog box
 		localContrast = gd.getNextBoolean();
 		meanInt = gd.getNextBoolean();
 		localWidth = (int) gd.getNextNumber();
@@ -345,18 +345,18 @@ public class Volume_Segmentation implements PlugIn {
 			return;
 		} else {
 			workingImg.show();
-			IJ.run(workingImg, "Enhance Contrast", "saturated=0.35");
+			//IJ.run(workingImg, "Enhance Contrast", "saturated=0.35");
 			workingImg.setTitle("TODO_"+originalName);
 			IJ.run(workingImg, "Analyze... ", "save=" + saveDir + "/TODO_"+originalName+".img");
 			IJ.saveAs(workingImg, "Tiff", saveDir + "/enhancedContrast_"
 					+ originalName + ".tiff");
 		}
 
-		// We try something totally different: Because we store an executable in
-		// a jar file, we need
-		// to copy it from our resources to the destination folder, execute it
-		// from there and then silently
-		// delete it again :)
+		/**Extracting exe file from resources/
+		 * Generating input and outputstreams
+		 * Execute 2dsegment in output folder
+		 * Check if segmentation worked and clean up folder
+		**/
 		IJ.log("Executing gradient flow algorithm");
 		InputStream stream = getClass().getResourceAsStream(
 				"/resources/3dsegment_16bit.exe");
@@ -413,6 +413,8 @@ public class Volume_Segmentation implements PlugIn {
 		// Inform user where files have been stored
 		//TODO: rename files and store rest in a new folder maybe?
 		IJ.log("Files saved to output folder.");
+		workingImg.changes = false;
+		workingImg.close();
 		
 	}
 }
