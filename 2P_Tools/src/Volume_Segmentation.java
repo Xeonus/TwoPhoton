@@ -293,15 +293,15 @@ public class Volume_Segmentation implements PlugIn {
 		// gd.addPanel(flowPanel);
 		// gd.addPanel(radioPanel);
 		gd.addMessage("Enhance Contrast for Segmentation:", f);
-		gd.addCheckbox("Apply Enhanced Local Contrast", localContrast);
-		gd.addNumericField("Local Square Length:", 20.0, 1);
-		gd.addNumericField("Saturation Percentage:", 0.4, 1);
+		gd.addCheckbox("Enhanced_Local_Contrast", localContrast);
+		gd.addNumericField("Local_Square_Length:", 20.0, 1);
+		gd.addNumericField("Saturation_Percentage:", 0.4, 1);
 		//gd.addMessage("Local Mean Intensity:", f);
-		gd.addCheckbox("Enhance Local Mean Intensity",
+		gd.addCheckbox("Enhance_Local_Mean Intensity",
 				meanInt);
 		//gd.addMessage("Pseudo-flat Field:", f);
-		gd.addCheckbox("Apply Pseudo-flat Field Correction", pseudoFlat);
-		gd.addNumericField("Gauss Radius:", 20.0, 1);
+		gd.addCheckbox("Pseudo-flat Field Correction", pseudoFlat);
+		gd.addNumericField("Gauss_Radius:", 20.0, 1);
 		gd.addPanel(directoryPanel);
 		gd.showDialog();
 

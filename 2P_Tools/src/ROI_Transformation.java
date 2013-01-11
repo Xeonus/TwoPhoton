@@ -230,16 +230,16 @@ public class ROI_Transformation implements PlugIn {
 		// Generate dialog box
 		GenericDialog gd = new GenericDialog(
 				"ROI Transformation Tool", IJ.getInstance());
-		gd.addChoice("High-Resolution Image", imgList, imgList[defaultImg1]);
-		gd.addChoice("Time Series (to register)", imgList, imgList[defaultImg2]);
+		gd.addChoice("High_Resolution Image", imgList, imgList[defaultImg1]);
+		gd.addChoice("Time_Series (to register)", imgList, imgList[defaultImg2]);
 		gd.addPanel(flowPanel);
 		gd.addMessage("Image Registration:", f);
 		gd.addCheckbox("Perform_Registration", chkItem);
 		gd.addChoice("Registration_Method:", operators, operators[operator]);
-		gd.addNumericField("Approx._size_of_detection (px):", 5, 1);
+		gd.addNumericField("Approx_size_of_detection (px):", 5, 1);
 		gd.addNumericField("Number_of_neighbors:", 5, 1);
-		gd.addCheckbox("Image Stabilization", imgStabilize);
-		gd.addCheckbox("Delete first slice?", deleteSlice);
+		gd.addCheckbox("Image_Stabilization", imgStabilize);
+		gd.addCheckbox("Delete_first_slice?", deleteSlice);
 		gd.addMessage("Data analysis:", f);
 		// gd.addCheckbox("Create dF/F of original stack", chkdff);
 		gd.addCheckbox("Create dF/F of registered stack", transdff);

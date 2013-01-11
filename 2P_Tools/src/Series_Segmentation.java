@@ -304,20 +304,20 @@ public class Series_Segmentation implements PlugIn {
 
 		// Generate dialog box
 		GenericDialog gd = new GenericDialog(
-				"Automatic Cell Detection in 3D Stacks", IJ.getInstance());
+				"Automatic Cell Detection in 2D Time Series", IJ.getInstance());
 		gd.addChoice("OGB channel", imgList, imgList[defaultImg1]);
 		gd.addChoice("Sulforhodamine channel", imgList, imgList[defaultImg2]);
 		// gd.addPanel(flowPanel);
 		// gd.addPanel(radioPanel);
 		gd.addMessage("Enhance Contrast for Segmentation:", f);
-		gd.addCheckbox("Apply Enhanced Local Contrast", localContrast);
-		gd.addNumericField("Local Square Length:", 20.0, 1);
-		gd.addNumericField("Saturation Percentage:", 0.4, 1);
+		gd.addCheckbox("Enhance_Local Contrast", localContrast);
+		gd.addNumericField("Local_Square_Length:", 20.0, 1);
+		gd.addNumericField("Saturation_Percentage:", 0.4, 1);
 		// gd.addMessage("Local Mean Intensity:", f);
 
 		// gd.addMessage("Pseudo-flat Field:", f);
-		gd.addCheckbox("Apply Pseudo-flat Field Correction", pseudoFlat);
-		gd.addNumericField("Gauss Radius:", 20.0, 1);
+		gd.addCheckbox("Pseudo-flat_Field Correction", pseudoFlat);
+		gd.addNumericField("Gauss_Radius:", 20.0, 1);
 		gd.addPanel(directoryPanel);
 		gd.showDialog();
 
@@ -467,7 +467,9 @@ public class Series_Segmentation implements PlugIn {
 			IJ.log("RoiSet.zip has been saved to output folder");
 			RoiManager rm = RoiManager.getInstance();
 			rm.runCommand("Save", saveDir+originalName+"_RoiSet.zip");
+			srImg.hide();
 			rm.runCommand("Show All");
+			srImg.show();
 			
 			
 			

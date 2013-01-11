@@ -146,18 +146,18 @@ public class Calculate_DFF implements PlugIn {
 
 	// create Dialog window with default values
 	GenericDialog gd = new GenericDialog("Calculate dFF Tool", IJ.getInstance());
-	gd.addChoice("Image Stack:", imgList, imgList[ defaultImg1 ] );
+	gd.addChoice("Image_Stack:", imgList, imgList[ defaultImg1 ] );
 	//gd.addPanel(flowPanel);
-	gd.addNumericField("DFF Minimum (%):", 1, 1);
-  	gd.addNumericField("DFF Maximum (%):", 7,1);
+	gd.addNumericField("DFF_Minimum (%):", 1, 1);
+  	gd.addNumericField("DFF_Maximum (%):", 7,1);
 	gd.addNumericField("Start for F0:", 5,1);
 	gd.addNumericField("End for F0:", 20,1);
-	gd.addNumericField("Gauss radius:", 2,1);
+	gd.addNumericField("Gauss_radius:", 2,1);
 	//gd.addNumericField("Kalman bias:", 0.8,1);
-	gd.addCheckbox("Apply Image Stabilization", false);
+	gd.addCheckbox("Image_Stabilization", false);
 	//gd.addCheckbox("Kalman?", false);
-	gd.addCheckbox("Apply Gauss Filter", false);
-	gd.addCheckbox("Delete first slice?", false);
+	gd.addCheckbox("Gauss_Filter", false);
+	gd.addCheckbox("Delete_first_slice", false);
 	gd.addMessage("Plot and save transients for a ROI set (optional):");
 	gd.addPanel(ROIFlowPanel);
 	gd.showDialog();
