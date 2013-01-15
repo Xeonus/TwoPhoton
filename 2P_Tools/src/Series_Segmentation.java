@@ -11,6 +11,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.InputStream;
+import java.net.URL;
+import java.security.CodeSource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
@@ -38,6 +45,7 @@ public class Series_Segmentation implements PlugIn {
 	InputStream exeIS;
 	OutputStream dest;
 	private Process proc;
+	private String [] coreDlls; 
 
 	// Checkbox items
 	private boolean localContrast;
@@ -257,9 +265,9 @@ public class Series_Segmentation implements PlugIn {
 		// Select output folder
 		Panel directoryPanel = new Panel(new FlowLayout());
 		Panel myDirectoryPanel = new Panel(new GridLayout(2, 1));
-		final Button loadDirectoryButton = new Button("Output Direcotry");
+		final Button loadDirectoryButton = new Button("Output Directory");
 		Panel directoryTextPanel = new Panel(new GridLayout(2, 1));
-		final TextField directoryField = new TextField("Output Directory", 30);
+		final TextField directoryField = new TextField("Path to save files", 30);
 		// directoryField.setText("Output directory path");
 
 		loadDirectoryButton.addActionListener(new ActionListener() {
@@ -371,6 +379,59 @@ public class Series_Segmentation implements PlugIn {
 		**/
 		IJ.log("Executing gradient flow algorithm");
 		
+		//Extracting additional core dll files for 2dsegment.exe
+		CodeSource src = getClass().getProtectionDomain().getCodeSource();
+		List<String> fileList = new ArrayList<String>();
+		if (src != null){
+			URL jar = src.getLocation();
+			try {
+				ZipInputStream zip = new ZipInputStream(jar.openStream());
+				ZipEntry ze = null;
+				while((ze = zip.getNextEntry()) != null){
+					String entryName = ze.getName();
+					if(entryName.endsWith(".dll")){
+						fileList.add(entryName.substring(18));
+					}
+				}
+				coreDlls = fileList.toArray(new String [fileList.size()]);
+			
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				IJ.error("Jar location not found!");
+			}
+			
+		}
+		
+		//Now copy dlls to destination
+		for(int i=0; i<fileList.size(); i++){
+			InputStream coreDll = getClass().getResourceAsStream("/resources/coreDLL/" +coreDlls[i]);
+			
+			OutputStream coreDllOut;
+			int readBytes;
+			byte[] buffer = new byte[4096];
+			try {
+				coreDllOut = new FileOutputStream(new File(saveDir+"/"
+						+ coreDlls[i]));
+				while ((readBytes = coreDll.read(buffer)) > 0) {
+					coreDllOut.write(buffer, 0, readBytes);
+				}
+				coreDllOut.flush();
+				coreDllOut.close();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				IJ.error("Can not move core dll files!");
+				// return;
+			}
+			try {
+				coreDll.close();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		}
+		
 		
 		//if either dimension is below 100px we have to use alternative exe file
 		if(ogbImg.getHeight() < 100 || ogbImg.getWidth() < 100){
@@ -431,23 +492,32 @@ public class Series_Segmentation implements PlugIn {
 		}
 
 		// Clean up directory and continue processing
-		IJ.log("Processing finished");
-		IJ.log("Cleaning up data");
 		File toDelete = new File(saveDir + "/segmentation.exe");
 		boolean success = toDelete.delete();
 		if (!success) {
-			IJ.error("Could not delete segmentation.exe");
+			IJ.error("Could not delete segmentation.exe files");
+		}
+		//Delete dll Files
+		for(int i=0; i<coreDlls.length; i++){
+			File dllDelete = new File(saveDir + "/"+coreDlls[i]);
+			boolean status = dllDelete.delete();
+			if(!status){
+				IJ.error("Could not delete core dll files");
+			}
+			
 		}
 		
 		// Inform user where files have been stored
 		// TODO: rename files and store rest in a new folder maybe?
-		IJ.log("Files saved to output folder.");
+		//IJ.log("Files saved to output folder.");
 
 		// Extract Regions of interest
 		// Make image Binary and count particles, then show it on the averaged
 		// image
 		File chkSeg = new File(saveDir + "RegionCellNucleiSegGVF_"+"TODO_"+ originalName+ ".tif");
 		if(chkSeg.exists()){
+			IJ.log("Processing finished");
+			IJ.log("Cleaned up data");
 			ImagePlus segmented = IJ.openImage(saveDir + "RegionCellNucleiSegGVF_"
 				+ "TODO_" + originalName + ".tif");
 			ImagePlus binarySegmentation = makeBinary(segmented);
