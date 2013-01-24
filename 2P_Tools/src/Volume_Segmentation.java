@@ -203,40 +203,6 @@ public class Volume_Segmentation implements PlugIn {
 			defaultImg2 = 1;
 		}
 
-		/*
-		 * //Create GUI elements final String ogbString =
-		 * "High Resolution Scan of Imaged Area"; final String srString =
-		 * "Low Resolution Image Series";
-		 * 
-		 * //Panel to load images and ROI Panel flowPanel = new Panel(new
-		 * FlowLayout()); Panel myLoadPanel = new Panel(new GridLayout(2,1));
-		 * final Button loadOGBButton = new Button("Load OGB Stack"); final
-		 * Button loadSRButton = new Button("Load SR Stack"); Panel myTextPanel
-		 * = new Panel(new GridLayout(2,1)); final TextField OGBField = new
-		 * TextField(ogbString, 30); final TextField SRField = new
-		 * TextField(srString, 30);
-		 */
-
-		// Removed Loadbuttons for batch processing compability
-		/*
-		 * //Load buttons loadOGBButton.addActionListener(new ActionListener() {
-		 * public void actionPerformed(ActionEvent e) {
-		 * IJ.showStatus("Loading OGB Stack"); IJ.open(); ImagePlus img1 =
-		 * IJ.getImage(); ogbImg = img1; ogbImg.hide(); //Case: Convert to 8-bit
-		 * if (img1.getBitDepth() != 8){ ogbImg.show(); IJ.run("8-bit");
-		 * ogbImg.hide(); } OGBField.setText(img1.getTitle()); originalName =
-		 * ogbImg.getShortTitle(); } });
-		 * 
-		 * loadSRButton.addActionListener(new ActionListener() { public void
-		 * actionPerformed(ActionEvent e) {
-		 * IJ.showStatus("Loading Sulforhodamine 101 Stack"); IJ.open();
-		 * ImagePlus img2 = IJ.getImage(); srImg = img2; srImg.hide(); //Case:
-		 * Convert to 8-bit if ( img2.getBitDepth() != 8) { srImg.show();
-		 * IJ.run("8-bit"); srImg.hide();
-		 * 
-		 * } SRField.setText(img2.getTitle()); } });
-		 */
-
 		// Select output folder
 		Panel directoryPanel = new Panel(new FlowLayout());
 		Panel myDirectoryPanel = new Panel(new GridLayout(2, 1));
@@ -257,33 +223,12 @@ public class Volume_Segmentation implements PlugIn {
 			}
 		});
 
-		/*
-		 * Load Buttons panel myTextPanel.add(OGBField);
-		 * myTextPanel.add(SRField); myLoadPanel.add(loadOGBButton);
-		 * myLoadPanel.add(loadSRButton); flowPanel.add(myLoadPanel);
-		 * flowPanel.add(myTextPanel);
-		 */
 
 		// Directory panel
 		directoryTextPanel.add(directoryField);
 		myDirectoryPanel.add(loadDirectoryButton);
 		directoryPanel.add(myDirectoryPanel);
 		directoryPanel.add(directoryTextPanel);
-
-		// remove radio buttons
-		/*
-		 * String seriesString = "Cell detection on time series"; String
-		 * stack3DString = "Cell detection on 3D stack"; JRadioButton
-		 * stackButton = new JRadioButton(stack3DString); JRadioButton
-		 * seriesButton = new JRadioButton(seriesString);
-		 * stackButton.setSelected(true); ButtonGroup group = new ButtonGroup();
-		 * group.add(stackButton); group.add(seriesButton);
-		 * 
-		 * 
-		 * //Add Buttons to new panel below load buttons Panel radioPanel = new
-		 * Panel(new GridLayout(0,1)); radioPanel.add(stackButton);
-		 * radioPanel.add(seriesButton);
-		 */
 
 		// Generate dialog box
 		GenericDialog gd = new GenericDialog(

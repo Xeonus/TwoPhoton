@@ -85,12 +85,7 @@ public class Calculate_DFF implements PlugIn {
 	//final String stackString = "Recorded 2-Photon time series";
 	final String ROIString = "ROIs in .zip-file";
 
-	//Panel to load image stack, generate buttons etc
-	//Panel flowPanel = new Panel(new FlowLayout());
-	//Panel myLoadPanel = new Panel(new GridLayout(1,1));
-	//final Button loadButton = new Button("Load Image stack");
-	//Panel myTextPanel = new Panel(new GridLayout(1,1));
-	//final TextField stackTextField = new TextField(stackString, 30); 
+	 
 	
 	//ROI Panel
 	Panel ROIFlowPanel = new Panel(new FlowLayout());
@@ -99,21 +94,6 @@ public class Calculate_DFF implements PlugIn {
 	final Button loadROIButton = new Button("Load ROIs");
 	final TextField ROIField = new TextField(ROIString, 30);
 
-
-	//Load buttons
-	/*
-	loadButton.addActionListener(new ActionListener() {
-	public void actionPerformed(ActionEvent e) {
-		IJ.showStatus("loading image stack");
-		IJ.open();
-		ImagePlus img1 = IJ.getImage();
-		stackImg = img1;
-		workDir = img1.getOriginalFileInfo().directory;
-		stackImg.hide();
-		stackTextField.setText(img1.getTitle());
-		}
-	});
-	*/
 	
 	loadROIButton.addActionListener(new ActionListener() {
 		@Override
@@ -134,10 +114,6 @@ public class Calculate_DFF implements PlugIn {
 			}
 		});
 
-	//myTextPanel.add(stackTextField);
-	//myLoadPanel.add(loadButton);
-	//flowPanel.add(myLoadPanel);
-	//flowPanel.add(myTextPanel);	
 	
 	ROIButtonPanel.add(loadROIButton);
 	ROITextPanel.add(ROIField);
@@ -204,7 +180,7 @@ public class Calculate_DFF implements PlugIn {
 	
 	ImagePlus showCase = stackImg.duplicate();
 	
-	//TODO: Kalman stack filter ist not stable in fiji
+	//TODO: Kalman stack filter ist not stable in Fiji
 	//Apply Kalman Filter 
 	/*
 	if (kalmanFlag==true) {
@@ -218,7 +194,7 @@ public class Calculate_DFF implements PlugIn {
 	}
 	*/
 	
-	//Duplicate YFP stack:
+	//Duplicate stack:
 	ImagePlus duplicateImg = stackImg.duplicate();
 
 	//Apply Gaussian Filter on duplicate image
@@ -228,13 +204,11 @@ public class Calculate_DFF implements PlugIn {
 		//duplicateYFP.hide();
 	}
 
-	// background subtraction Stack 1, here finding the minimum value and taking this as bkg
+	// Background subtraction on image stack
 	ImageStatistics istats = duplicateImg.getStatistics();
 	int minVal = (int) istats.min;
 	int maxVal = (int) istats.max;
-	//duplicateYFP.show();
 	IJ.run(duplicateImg, "Subtract...", "value="+minVal+" stack");
-	//duplicateYFP.hide();
 	
 	//Calculate Average
 	IJ.run(duplicateImg, "Z Project...", "start=1 stop="+duplicateImg.getImageStackSize()+ " projection=[Average Intensity]");
@@ -255,6 +229,7 @@ public class Calculate_DFF implements PlugIn {
 	ic = new ImageCalculator();
 	ImagePlus deltaFF = ic.run("Divide create 32-bit stack", deltaF, f_zero);
 	deltaFF.setTitle("DeltaF/F");
+	
 	// Express as relative change in percentage
 	IJ.run(deltaFF, "Multiply...", "stack value=100");
 	
@@ -264,7 +239,7 @@ public class Calculate_DFF implements PlugIn {
 	deltaF.changes = false;
 	deltaF.close();
 	
-	//Prepare the Average weighted dRR
+	//Prepare the Average weighted dFF
 	ImageStatistics istatsAvg = averageImg.getStatistics();
 	int minAvg = (int) istatsAvg.min;
 	int maxAvg = (int) istatsAvg.max;

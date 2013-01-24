@@ -77,21 +77,8 @@ public class Calculate_DRR implements PlugIn {
 			 defaultImg2 =1;
 		 }
 		
-
-	//final String stackStringCFP = "Image Stack of CFP channel";
-	//final String stackStringYFP = "Image Stack of YFP channel";
 	final String ROIString = "ROIs in .zip-file";
 
-	//Panels to load images (GFP and YFP channels)
-	//Panel flowPanel = new Panel(new FlowLayout());
-	//Panel myLoadPanel = new Panel(new GridLayout(2,1));
-	//final Button loadCFPButton = new Button("Load CFP stack");
-	//final Button loadYFPButton = new Button ("Load YFP stack");
-	//Panel myTextPanel = new Panel(new GridLayout(2,1));
-	//final TextField CFPTextField = new TextField(stackStringCFP, 30);
-	//final TextField YFPTextField = new TextField(stackStringYFP, 30); 
-	
-	
 	//ROI Panel
 	Panel ROIFlowPanel = new Panel(new FlowLayout());
 	Panel ROIButtonPanel = new Panel (new GridLayout(1,1));
@@ -99,33 +86,6 @@ public class Calculate_DRR implements PlugIn {
 	final Button loadROIButton = new Button("Load ROIs");
 	final TextField ROIField = new TextField(ROIString, 30);
 
-
-	//Load buttons
-	/*
-	loadCFPButton.addActionListener(new ActionListener() {
-	public void actionPerformed(ActionEvent e) {
-		IJ.showStatus("loading image stack for CFP");
-		IJ.open();
-		ImagePlus img1 = IJ.getImage();
-		stackImgCFP = img1;
-		stackImgCFP.hide();
-		CFPTextField.setText(img1.getTitle());
-		}
-	});
-
-
-	loadYFPButton.addActionListener(new ActionListener() {
-	public void actionPerformed(ActionEvent e) {
-		IJ.showStatus("loading image stack for YFP");
-		IJ.open();
-		ImagePlus img2 = IJ.getImage();
-		stackImgYFP = img2;
-		stackImgYFP.hide();
-		workDir = img2.getOriginalFileInfo().directory;
-		YFPTextField.setText(img2.getTitle());
-		}
-	});
-	*/
 	
 	loadROIButton.addActionListener(new ActionListener() {
 		@Override
@@ -147,14 +107,6 @@ public class Calculate_DRR implements PlugIn {
 		});
 
 
-
-	//myTextPanel.add(CFPTextField);
-	//myTextPanel.add(YFPTextField);
-	//myLoadPanel.add(loadCFPButton);
-	//myLoadPanel.add(loadYFPButton);
-	//flowPanel.add(myLoadPanel);
-	//flowPanel.add(myTextPanel);		
-	
 	ROIButtonPanel.add(loadROIButton);
 	ROITextPanel.add(ROIField);
 	ROIFlowPanel.add(ROIButtonPanel);
@@ -255,9 +207,7 @@ public class Calculate_DRR implements PlugIn {
 	// background subtraction Stack 1, here finding the minimum value and taking this as bkg
 	ImageStatistics istatsYFP = duplicateYFP.getStatistics();
 	int minValYFP = (int) istatsYFP.min;
-	//duplicateYFP.show();
 	IJ.run(duplicateYFP, "Subtract...", "value="+minValYFP+" stack");
-	//duplicateYFP.hide();
 	
 	//Calculate Average
 	IJ.run(duplicateYFP, "Z Project...", "start=1 stop="+duplicateYFP.getImageStackSize()+ " projection=[Average Intensity]");
@@ -268,17 +218,13 @@ public class Calculate_DRR implements PlugIn {
 	//duplicate the CFP image and apply a gauss filter on it
 	ImagePlus duplicateCFP = stackImgCFP.duplicate();
 	if (gaussFlag==true) {
-		//duplicateCFP.show();
 		IJ.run(duplicateCFP, "Gaussian Blur...", "radius="+gaussrad+" stack");
-		//duplicateCFP.hide();
 	}
 	
 	// Background subtraction of second duplicated image (duplicatedCFP)
 	ImageStatistics istatsCFP = duplicateCFP.getStatistics();
 	int minValCFP = (int) istatsCFP.min;
-	//duplicateCFP.show();
 	IJ.run(duplicateCFP, "Subtract...", "value="+minValCFP+" stack");
-	//duplicateCFP.hide();
 
 	//Calculate DRR
 	//First: YFP/CFP
@@ -332,13 +278,9 @@ public class Calculate_DRR implements PlugIn {
 	int minchannel = (int) istatschannel.min;
 	int maxchannel = (int) istatschannel.max;
 	IJ.setMinAndMax(channelAvg, minchannel, maxchannel);
-	//channelAvg.show();
 	IJ.run(channelAvg, "Conversions...", "scale");
 	IJ.run(channelAvg, "8-bit", "");
-	//channelAvg.hide();
-	//deltaRRWDuplicate.show();
 	IJ.run(deltaRRWDuplicate, "8-bit", "");
-	//deltaRRWDuplicate.hide();
 	
 	//Create merged view
 	channelAvg.show();
@@ -379,9 +321,7 @@ public class Calculate_DRR implements PlugIn {
 			IJ.run(deltaRR, "Plot Z-axis Profile", "");
 			//save plot here, because it is the active window instance
 			ImagePlus plotImg = WindowManager.getCurrentImage();
-			//mosaicStack.addSlice("ROI"+ Integer.toString(i), plotImg.getProcessor());
 			IJ.saveAs(plotImg, "Jpeg", saveDir+"/ROI"+ Integer.toString(i)+".jpg");
-			//ImagePlus plotSlice = IJ.openImage(saveDir+"/ROI"+ Integer.toString(i)+".jpg");
 			plotImg.changes = false;
 			plotImg.close();
 			ResultsTable resT = ResultsTable.getResultsTable();
