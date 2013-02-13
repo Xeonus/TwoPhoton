@@ -53,6 +53,10 @@ public class Calculate_DFF implements PlugIn {
 		int rCount = rm.getCount();
 		for (int i=0; i<rCount; i++){
 			rm.select(i);
+			//The first entry should be set at 01
+			//if(i==0){
+			//	rm.runCommand("Rename", "01");
+			//}
 			if(i<=9){
 				rm.runCommand("Rename", "0"+Integer.toString(i));
 			}
@@ -295,8 +299,13 @@ public class Calculate_DFF implements PlugIn {
 		String saveDir = workDir+"/dFF_"+stackImg.getShortTitle();
 		File resultFolder = new File(saveDir);
 		resultFolder.mkdir();
-		//Rename attempt
-		//renameROIs();
+		
+		//Save the images to a different folder
+		String traceDir = saveDir + "/Traces";
+		File traceFolder = new File(traceDir);
+		traceFolder.mkdir();
+
+		
 		RoiManager rm = RoiManager.getInstance();
 		Roi [] translatedROIs = rm.getRoisAsArray();
 		int rCount = rm.getCount();
@@ -306,7 +315,7 @@ public class Calculate_DFF implements PlugIn {
 			//save plot here, because it is the active window instance
 			ImagePlus plotImg = WindowManager.getCurrentImage();
 			//mosaicStack.addSlice("ROI"+ Integer.toString(i), plotImg.getProcessor());
-			IJ.saveAs(plotImg, "Jpeg", saveDir+"/ROI"+ Integer.toString(i)+".jpg");
+			IJ.saveAs(plotImg, "Jpeg", traceDir+"/ROI"+ Integer.toString(i)+".jpg");
 			//ImagePlus plotSlice = IJ.openImage(saveDir+"/ROI"+ Integer.toString(i)+".jpg");
 			plotImg.changes = false;
 			plotImg.close();
@@ -323,7 +332,7 @@ public class Calculate_DFF implements PlugIn {
 			tw.close(false);
 		}
 		//get first slice and initialize stack with parameters
-		ImagePlus initialSlice = IJ.openImage(saveDir+"/ROI"+ Integer.toString(0)+".jpg");
+		ImagePlus initialSlice = IJ.openImage(traceDir+"/ROI"+ Integer.toString(0)+".jpg");
 		//Draw the name of the ROI at a nice location
 		initialSlice.getChannelProcessor().setFont(f);
 		initialSlice.getChannelProcessor().drawString("ROI"+ Integer.toString(0), 60, 240);
@@ -332,7 +341,7 @@ public class Calculate_DFF implements PlugIn {
 		
 		//iterate over the rest of the stack
 		for(int j=1; j<rCount; j++){
-			ImagePlus plotSlice = IJ.openImage(saveDir+"/ROI"+ Integer.toString(j)+".jpg");
+			ImagePlus plotSlice = IJ.openImage(traceDir+"/ROI"+ Integer.toString(j)+".jpg");
 			//Draw the name of the ROI at a nice location
 			plotSlice.getChannelProcessor().setFont(f);
 			plotSlice.getChannelProcessor().drawString("ROI"+ Integer.toString(j), 60, 240);
@@ -343,13 +352,16 @@ public class Calculate_DFF implements PlugIn {
 		MontageMaker mn = new MontageMaker();
 		ImagePlus mosaicImp = new ImagePlus("ROI Plots", mosaicStack);
 		mosaicImp.updateAndDraw();
+		mosaicImp.show();
+		IJ.saveAs(mosaicImp, "Tiff", traceDir+"/ROI Plots.tif");
 		////find smallest square grid configuration for mosaic
 		int mosRows= 1+(int)Math.floor(Math.sqrt(mosaicStack.getSize()));
 		int mosCols=mosRows-1;
 		while (mosRows*mosCols<mosaicStack.getSize())
 			mosCols++;
 		mn.makeMontage(mosaicImp, mosRows, mosCols, 1.0, 1, mosaicStack.getSize(), 1, 1, false);
-		
+		mosaicImp.changes = false;
+		mosaicImp.close();
 		
 	}
 

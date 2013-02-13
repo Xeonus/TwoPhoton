@@ -6,8 +6,10 @@ import java.awt.Panel;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.InputStream;
@@ -80,14 +82,19 @@ public class Series_Segmentation implements PlugIn {
 		return subImg;
 	}
 	
-	public void renameROIs() {
+	public void renameROIs(){
 		RoiManager rm = RoiManager.getInstance();
 		int rCount = rm.getCount();
-		for (int i = 0; i < rCount; i++) {
+		for (int i=0; i<rCount; i++){
 			rm.select(i);
-			if (i <= 9) {
-				rm.runCommand("Rename", "0" + Integer.toString(i));
-			} else {
+			//The first entry should be set at 01
+			//if(i==0){
+			//	rm.runCommand("Rename", "01");
+			//}
+			if(i<=9){
+				rm.runCommand("Rename", "0"+Integer.toString(i));
+			}
+			else {
 				rm.runCommand("Rename", Integer.toString(i));
 			}
 		}
@@ -429,8 +436,54 @@ public class Series_Segmentation implements PlugIn {
 			// TODO: change to tif
 			// wait is neccessary not to call a forked process that waitFor can
 			// not handle (waitfor won't).
-			proc = rt.exec("cmd /C start /wait " + saveDir
-					+ "segmentation.exe " + saveDir + "TODO_"+originalName+".tif");
+			
+			//To handle paths with spacing, use execute as string array
+			String exePath = "\""+saveDir + "segmentation.exe\"";
+			String imgP = "\""+saveDir+ "TODO_"+originalName+".tif"+"\"";
+			String exePathNoEsc = saveDir + "segmentation.exe";
+			String imgPNoEsc = saveDir+ "TODO_"+originalName+".tif";
+			//String combCmd = exePath +" "+ imgP;
+			//IJ.log("Combined cmd string: " + "\""+saveDir+ "segmentation.exe " + saveDir + "TODO_"+originalName+".tif\"");
+			//we have to escape the string!
+			//String[] params = {"cmd", "/C", "/wait", "\""+"\""+exePath+imgP+"\""+"\""}; 
+			//String[] params = {"cmd.exe", "/C", "start", "/wait",  combCmd};
+			//String[] params = {"cmd", "/K", "start", "/wait",  exePath +" "+ imgP};
+			//String[] params = new String []{"cmd", "/C", "/wait", "\""+exePathNoEsc+", "+imgPNoEsc+"\""};
+			//String[] params = new String []{"cmd", "/K", "/start", exePath, imgP};
+			//IJ.log("Fucked up path: " + "\""+exePath+" "+imgP+"\"");
+			//String[] params = {"cmd", "/C","/start", "/wait",  exePath, imgP};
+			
+			//new approach, create bat file and execute that shit
+
+			String cmdStrings = "cmd /C " + "\"\""+saveDir
+					+ "segmentation.exe\""+" "+ "\""+ saveDir + "TODO_"+originalName+".tif\"\"";
+			String batName = "executer.bat";
+			
+			FileWriter fstream = new FileWriter(saveDir+batName, true);
+			BufferedWriter out = new BufferedWriter(fstream);
+			out.write(cmdStrings);
+			out.close();
+			
+			proc = rt.exec(saveDir + "/executer.bat");
+			
+			
+			//proc = rt.exec("cmd /C /wait " + "\""+saveDir
+						//+ "segmentation.exe\""+"^ "+ "\""+ saveDir + "TODO_"+originalName+".tif\"");
+			//proc = rt.exec("cmd /C /wait " + "\"\""+saveDir
+				//	+ "segmentation.exe"+"\"\"" +" "+ "\"\""+ saveDir + "TODO_"+originalName+".tif"+"\"\"");
+			
+			//proc = rt.exec("cmd /S /C /wait "+exePath +" "+ imgPath);
+			//proc = rt.exec("cmd /C /wait "+"\""+saveDir
+				//		+ "segmentation.exe\""+" "+"\""+ saveDir + "TODO_"+originalName+".tif\"");
+			//proc = rt.exec("start cmd.exe /wait /C "+combCmd);
+			//proc = rt.exec(params);
+			//proc = rt.exec("cmd /C /wait "+"\""+exePath+" "+imgP+"\"");
+			//proc = rt.exec("cmd /C start /wait " + saveDir
+				//	+ "segmentation.exe " + saveDir + "TODO_"+originalName+".tif");
+			//proc = rt.exec(params);
+			//ProcessBuilder pb = new ProcessBuilder(params);
+			//proc = pb.start();
+			//proc = rt.exec(params);
 			proc.waitFor();
 		} catch (IOException e1) {
 			IJ.error("Could not execute command in cmd.exe");
