@@ -32,6 +32,16 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
 
+/**
+ * This class implements a Plugin used to segment neuronal somatas for a given image stack (time series)
+ * 
+ * Some code for data analysis adapted from Fritjof Helmchens Macro Files
+ * Brain Research Institute, University of Zurich
+ * 
+ * @author Alexander van der Bourg, Brain Research Institute Zurich
+ * @version 1.0
+ */
+
 public class Series_Segmentation implements PlugIn {
 
 	// Fields for computation
@@ -433,60 +443,25 @@ public class Series_Segmentation implements PlugIn {
 		Runtime rt = Runtime.getRuntime();
 		
 		try {
-			// TODO: change to tif
-			// wait is neccessary not to call a forked process that waitFor can
-			// not handle (waitfor won't).
 			
-			//To handle paths with spacing, use execute as string array
-			String exePath = "\""+saveDir + "segmentation.exe\"";
-			String imgP = "\""+saveDir+ "TODO_"+originalName+".tif"+"\"";
-			String exePathNoEsc = saveDir + "segmentation.exe";
-			String imgPNoEsc = saveDir+ "TODO_"+originalName+".tif";
-			//String combCmd = exePath +" "+ imgP;
-			//IJ.log("Combined cmd string: " + "\""+saveDir+ "segmentation.exe " + saveDir + "TODO_"+originalName+".tif\"");
-			//we have to escape the string!
-			//String[] params = {"cmd", "/C", "/wait", "\""+"\""+exePath+imgP+"\""+"\""}; 
-			//String[] params = {"cmd.exe", "/C", "start", "/wait",  combCmd};
-			//String[] params = {"cmd", "/K", "start", "/wait",  exePath +" "+ imgP};
-			//String[] params = new String []{"cmd", "/C", "/wait", "\""+exePathNoEsc+", "+imgPNoEsc+"\""};
-			//String[] params = new String []{"cmd", "/K", "/start", exePath, imgP};
-			//IJ.log("Fucked up path: " + "\""+exePath+" "+imgP+"\"");
-			//String[] params = {"cmd", "/C","/start", "/wait",  exePath, imgP};
-			
-			//new approach, create bat file and execute that shit
-
+			//Create a bat file and execut the commands.
+			//We need to escape the string set to avoid deletion of white space!
 			String cmdStrings = "cmd /C " + "\"\""+saveDir
 					+ "segmentation.exe\""+" "+ "\""+ saveDir + "TODO_"+originalName+".tif\"\"";
-			String batName = "executer.bat";
+			String batName = "segmenter.bat";
 			
 			FileWriter fstream = new FileWriter(saveDir+batName, true);
 			BufferedWriter out = new BufferedWriter(fstream);
 			out.write(cmdStrings);
 			out.close();
 			
-			proc = rt.exec(saveDir + "/executer.bat");
-			
-			
-			//proc = rt.exec("cmd /C /wait " + "\""+saveDir
-						//+ "segmentation.exe\""+"^ "+ "\""+ saveDir + "TODO_"+originalName+".tif\"");
-			//proc = rt.exec("cmd /C /wait " + "\"\""+saveDir
-				//	+ "segmentation.exe"+"\"\"" +" "+ "\"\""+ saveDir + "TODO_"+originalName+".tif"+"\"\"");
-			
-			//proc = rt.exec("cmd /S /C /wait "+exePath +" "+ imgPath);
-			//proc = rt.exec("cmd /C /wait "+"\""+saveDir
-				//		+ "segmentation.exe\""+" "+"\""+ saveDir + "TODO_"+originalName+".tif\"");
-			//proc = rt.exec("start cmd.exe /wait /C "+combCmd);
-			//proc = rt.exec(params);
-			//proc = rt.exec("cmd /C /wait "+"\""+exePath+" "+imgP+"\"");
-			//proc = rt.exec("cmd /C start /wait " + saveDir
-				//	+ "segmentation.exe " + saveDir + "TODO_"+originalName+".tif");
-			//proc = rt.exec(params);
-			//ProcessBuilder pb = new ProcessBuilder(params);
-			//proc = pb.start();
-			//proc = rt.exec(params);
+			//Execute bat file
+			proc = rt.exec(saveDir + "/segmenter.bat");
 			proc.waitFor();
+			
+			
 		} catch (IOException e1) {
-			IJ.error("Could not execute command in cmd.exe");
+			IJ.error("Could not execute segmenter.bat");
 			e1.printStackTrace();
 		} catch (InterruptedException iex) {
 			iex.printStackTrace();
@@ -507,10 +482,17 @@ public class Series_Segmentation implements PlugIn {
 			}
 			
 		}
+		//Delete bat file
+		File batF = new File (saveDir+"/segmenter.bat");
+		if(batF.exists()){
+			boolean batDel = batF.delete();
+			if(!batDel){
+				IJ.error("Could not delete segmenter.bat");
+			}
+		}
 		
 		// Inform user where files have been stored
 		// TODO: rename files and store rest in a new folder maybe?
-		//IJ.log("Files saved to output folder.");
 
 		// Extract Regions of interest
 		// Make image Binary and count particles, then show it on the averaged
@@ -535,18 +517,17 @@ public class Series_Segmentation implements PlugIn {
 			workingImg.changes = false;
 			workingImg.close();
 			ogbImg.show();
-			IJ.log("RoiSet.zip has been saved to output folder");
+			IJ.log("RoiSet.zip has been saved to: " + saveDir);
 			RoiManager rm = RoiManager.getInstance();
 			rm.runCommand("Save", saveDir+originalName+"_RoiSet.zip");
 			srImg.hide();
 			rm.runCommand("Show All");
 			srImg.show();
-			
-			
-			
+			ogbImg.show();
+				
 			
 		} else {
-			IJ.error("The segmentation files have not been saved!");
+			IJ.error("The segmentation has not been performed!");
 			return;
 		}
 		

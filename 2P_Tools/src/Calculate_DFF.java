@@ -1,3 +1,4 @@
+import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.plugin.MontageMaker;
 import ij.plugin.PlugIn;
@@ -7,7 +8,6 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.WindowManager;
-//import ij.plugin.frame.RoiManager;
 import java.awt.Button;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -20,9 +20,10 @@ import java.io.File;
 import java.io.IOException;
 
 import ij.plugin.ImageCalculator;
-//import ij.measure.ResultsTable;
+import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 import ij.text.TextWindow;
+import ij.util.Tools;
 
 
 /**
@@ -32,7 +33,7 @@ import ij.text.TextWindow;
  * Brain Research Institute, University of Zurich
  * 
  * @author Alexander van der Bourg, Brain Research Institute Zurich
- * @version 0.1
+ * @version 1.0
  */
 
 public class Calculate_DFF implements PlugIn {
@@ -44,6 +45,7 @@ public class Calculate_DFF implements PlugIn {
 	public static int defaultImg1=0;
 	private String workDir;
 	private ImageStack mosaicStack;
+	private ImageStack resultPlots;
 	RoiManager roiwin;
 	Font f = new Font("dialog",Font.BOLD,12);
 
@@ -65,6 +67,42 @@ public class Calculate_DFF implements PlugIn {
 			}
 		}
 	}
+	
+
+		/**
+		 * Method to calculate the Z-axis profile of an image with a roi selection
+		 * 
+		 * @param roi
+		 * @param toAnalyze
+		 * @param minThreshold
+		 * @param maxThreshold 
+		 */
+		
+		float[] getZAxisProfile(Roi roi, ImagePlus toAnalyze, double minThreshold, double maxThreshold) {
+			ImageStack stack = toAnalyze.getStack();
+			int size = stack.getSize();
+			float[] values = new float[size];
+			Calibration cal = toAnalyze.getCalibration();
+			Analyzer analyzer = new Analyzer(toAnalyze);
+			@SuppressWarnings("static-access")
+			int measurements = analyzer.getMeasurements();
+			//int current = toAnalyze.getCurrentSlice();
+			for (int i=1; i<=size; i++) {
+				toAnalyze.setSlice(i);
+				ImageProcessor ip = stack.getProcessor(i);
+				if (minThreshold!=ImageProcessor.NO_THRESHOLD)
+					ip.setThreshold(minThreshold,maxThreshold,ImageProcessor.NO_LUT_UPDATE);
+				ip.setRoi(roi);
+				ImageStatistics stats = ImageStatistics.getStatistics(ip, measurements, cal);
+				analyzer.saveResults(stats, roi);			
+				analyzer.displayResults();
+				values[i-1] = (float)stats.mean;
+			}
+			return values;
+		}
+	
+	
+	
 	
 	
 	//Execute plugin procedures
@@ -158,8 +196,9 @@ public class Calculate_DFF implements PlugIn {
 	deleteSlice = gd.getNextBoolean();
 	stackImg = WindowManager.getImage( idList[ defaultImg1 = gd.getNextChoiceIndex() ] );
 	workDir = stackImg.getOriginalFileInfo().directory;
-
-
+	
+	
+	
 	
 	//Delete first slice in stack:
 	if (deleteSlice == true){
@@ -309,28 +348,99 @@ public class Calculate_DFF implements PlugIn {
 		RoiManager rm = RoiManager.getInstance();
 		Roi [] translatedROIs = rm.getRoisAsArray();
 		int rCount = rm.getCount();
+		ResultsTable fancy = new ResultsTable();
+		float[] x = new float[deltaFF.getNSlices()];
 		for( int i=0; i<rCount; i++){
 			deltaFF.setRoi(translatedROIs[i]);
-			IJ.run(deltaFF, "Plot Z-axis Profile", "");
+			//IJ.run(deltaFF, "Plot Z-axis Profile", "");
+			
+			//new method stuff here:
+			double minThreshold = deltaFF.getProcessor().getMinThreshold();
+			double maxThreshold = deltaFF.getProcessor().getMaxThreshold();
+			float [] y = getZAxisProfile(translatedROIs[i], deltaFF, minThreshold, maxThreshold);
+			
+			//Initialize Table with zero values
+			if(i==0){
+				//float[] x = new float[y.length];
+				for (int n=0; n<x.length; n++)
+					x[n] = n+1;
+				//First add slice label
+				for(int m=0; m<x.length; m++){
+					fancy.incrementCounter();
+					fancy.addValue(translatedROIs[i].getName(), x[m]);
+				}
+			}
+			//dirty way to prevent the creation of an obsolete last data column. 
+			if(i==translatedROIs.length){
+				break;
+			}
+			//now add values to resultstable
+			for (int h=0; h<y.length; h++ ){
+				//Set values for table elements
+				fancy.addValue(translatedROIs[i].getName(), y[h]);
+				fancy.setValue(i, h, y[h]);
+			}
+			
+			//We create a plot of the measurement, but do not show it
+			//instead we create an imageplus reference for later and add it to a stack
+			String xAxisLabel = "Slice";
+			Plot plot = new Plot("Roi "+Integer.toString(i), xAxisLabel, "Mean", x, y);
+			double ymin = ProfilePlot.getFixedMin();
+			double ymax= ProfilePlot.getFixedMax();
+			if (!(ymin==0.0 && ymax==0.0)) {
+				double[] a = Tools.getMinMax(x);
+				double xmin=a[0]; double xmax=a[1];
+				plot.setLimits(xmin, xmax, ymin, ymax);
+			}
+			ImagePlus plotSlice = plot.getImagePlus();
+			if( i==0){
+				resultPlots = new ImageStack(plotSlice.getWidth(), plotSlice.getHeight());
+			}
+			resultPlots.addSlice(plotSlice.getProcessor());
+			
+			
 			//save plot here, because it is the active window instance
-			ImagePlus plotImg = WindowManager.getCurrentImage();
+			//ImagePlus plotImg = WindowManager.getCurrentImage();
 			//mosaicStack.addSlice("ROI"+ Integer.toString(i), plotImg.getProcessor());
-			IJ.saveAs(plotImg, "Jpeg", traceDir+"/ROI"+ Integer.toString(i)+".jpg");
+			//IJ.saveAs(plotImg, "Jpeg", traceDir+"/ROI"+ Integer.toString(i)+".jpg");
 			//ImagePlus plotSlice = IJ.openImage(saveDir+"/ROI"+ Integer.toString(i)+".jpg");
-			plotImg.changes = false;
-			plotImg.close();
-			ResultsTable resT = ResultsTable.getResultsTable();
-			try{
-			resT.saveAs(saveDir +"/ROI"+ Integer.toString(i)+".csv");
-			}
+			//plotImg.changes = false;
+			//plotImg.close();
+			//ResultsTable resT = ResultsTable.getResultsTable();
+			//try{
+			//	resT.saveAs(saveDir +"/ROI"+ Integer.toString(i)+".csv");
+			//}
 			//If we want to save, we have to throw an exception if it fails
-			catch (IOException e){
-				IJ.log("Can not find working directory");
-			}
+			//catch (IOException e){
+				//IJ.log("Can not find working directory");
+			//}
 			//Close ResultsTable
 			TextWindow tw = ResultsTable.getResultsWindow();
 			tw.close(false);
 		}
+		//finally show the new resultstable
+		fancy.show("Combined Results");
+		
+		//now save the fancy table
+		try{
+			fancy.saveAs(saveDir +"dFFData.csv");
+		}
+		//If we want to save, we have to throw an exception if it fails
+		catch (IOException e){
+			IJ.log("Can not save to working directory!");
+		}
+		
+		
+		//new method: create a plot on my own now and do not save images!
+		//we have now resultplots and use this to generate the mosaic
+		//ImagePlus initialSlice = new ImagePlus("ini", resultPlots.getProcessor(0));
+		for(int j=1; j<rCount; j++){
+			resultPlots.getProcessor(j).setFont(f);
+			resultPlots.getProcessor(j).drawString("ROI"+ Integer.toString(j), 60, 240);
+		}
+		mosaicStack = resultPlots;
+		
+		/*
 		//get first slice and initialize stack with parameters
 		ImagePlus initialSlice = IJ.openImage(traceDir+"/ROI"+ Integer.toString(0)+".jpg");
 		//Draw the name of the ROI at a nice location
@@ -349,6 +459,8 @@ public class Calculate_DFF implements PlugIn {
 			plotSlice.changes = false;
 			plotSlice.close();
 		}
+		*/
+		
 		MontageMaker mn = new MontageMaker();
 		ImagePlus mosaicImp = new ImagePlus("ROI Plots", mosaicStack);
 		mosaicImp.updateAndDraw();

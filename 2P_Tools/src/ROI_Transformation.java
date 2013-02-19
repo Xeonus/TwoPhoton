@@ -35,8 +35,6 @@ import java.io.InputStreamReader;
  * transforms ROIs defined in the high-res stack accordingly. In a second stage,
  * the data can be analyzed.
  * 
- * Some code for data analysis adapted from Fritjof Helmchens Macro Files Brain
- * Research Institute, University of Zurich
  * 
  * @author Alexander van der Bourg, Brain Research Institute Zurich
  * @version 0.3

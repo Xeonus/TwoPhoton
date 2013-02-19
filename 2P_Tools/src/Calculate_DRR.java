@@ -25,14 +25,16 @@ import ij.plugin.ImageCalculator;
 import ij.plugin.frame.RoiManager;
 import ij.text.TextWindow;
 
-
 /**
- * This plugin is a first version to implement Delta R over R
- * It requires an image stack to be translated. In a future step, this plugin will be included in a general
- * ImageJ Plugin toolbox.
+ * This class implements a Plugin used to calculate Delta R / R for a given image stack (time series)
  * 
- * Code is implemented based on Fritjof Helmchens Macros.
+ * Some code for data analysis adapted from Fritjof Helmchens Macro Files
+ * Brain Research Institute, University of Zurich
+ * 
+ * @author Alexander van der Bourg, Brain Research Institute Zurich
+ * @version 1.0
  */
+
 public class Calculate_DRR implements PlugIn {
 	/**
 	 * This method gets called by ImageJ / Fiji.

@@ -6,8 +6,10 @@ import java.awt.Panel;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.InputStream;
@@ -21,6 +23,17 @@ import ij.io.DirectoryChooser;
 import ij.plugin.ImageCalculator;
 import ij.plugin.PlugIn;
 import ij.plugin.frame.RoiManager;
+
+
+/**
+ * This class implements a Plugin used to segment neuronal somatas for a given 3D image stack
+ * 
+ * Some code for data analysis adapted from Fritjof Helmchens Macro Files
+ * Brain Research Institute, University of Zurich
+ * 
+ * @author Alexander van der Bourg, Brain Research Institute Zurich
+ * @version 1.0
+ */
 
 public class Volume_Segmentation implements PlugIn {
 
@@ -285,14 +298,17 @@ public class Volume_Segmentation implements PlugIn {
 					stackCheck);
 		}
 		// save 3D stack in analyze format
+		//If user input not specified, save to default folder Segmentation
 		if (saveDir == null) {
-			IJ.error("No output directory specified");
-			return;
+			saveDir = ogbImg.getOriginalFileInfo().directory + "Segmentation\\";
+			File resultFolder = new File(saveDir);
+			resultFolder.mkdir();
+			//return;
 		} else {
 			workingImg.show();
 			//IJ.run(workingImg, "Enhance Contrast", "saturated=0.35");
 			workingImg.setTitle("TODO_"+originalName);
-			IJ.run(workingImg, "Analyze... ", "save=" + saveDir + "/TODO_"+originalName+".img");
+			IJ.run(workingImg, "Analyze... ", "save=[" + saveDir + "/TODO_"+originalName +".img]");
 			IJ.saveAs(workingImg, "Tiff", saveDir + "/enhancedContrast_"
 					+ originalName + ".tiff");
 		}
@@ -335,13 +351,31 @@ public class Volume_Segmentation implements PlugIn {
 		// Now try to execute the segmentation.exe and give the paths in cmd.exe
 		Runtime rt = Runtime.getRuntime();
 		try {
+			
+			//Create a bat file and execut the commands.
+			//We need to escape the string set to avoid deletion of white space!
+			String cmdStrings = "cmd /C " + "\"\""+saveDir
+					+ "segmentation.exe\""+" "+ "\""+ saveDir + "TODO_"+originalName+".img\"\"";
+			String batName = "segmenter.bat";
+			
+			FileWriter fstream = new FileWriter(saveDir+batName, true);
+			BufferedWriter out = new BufferedWriter(fstream);
+			out.write(cmdStrings);
+			out.close();
+			
+			//Execute bat file
+			proc = rt.exec("cmd /C "+saveDir + "/segmenter.bat");
+			proc.waitFor();
+			
 			// wait is neccessary not to call a forked process that waitFor can
 			// not handle (waitfor won't).
-			proc = rt.exec("cmd /C start /wait " + saveDir
-					+ "/segmentation.exe " + saveDir + "/TODO_"+originalName+".img");
-			proc.waitFor();
+			//proc = rt.exec("cmd /C start /wait " + saveDir
+				//	+ "/segmentation.exe " + saveDir + "/TODO_"+originalName+".img");
+			//proc.waitFor();
+			
+			
 		} catch (IOException e1) {
-			IJ.error("Could not execute command in cmd.exe");
+			IJ.error("Could not execute segmenter.bat");
 			e1.printStackTrace();
 		} catch (InterruptedException iex) {
 			iex.printStackTrace();
@@ -349,15 +383,25 @@ public class Volume_Segmentation implements PlugIn {
 
 		// Clean up directory and continue processing
 		IJ.log("Processing finished");
+		/*
 		IJ.log("Cleaning up data");
 		File toDelete = new File(saveDir + "/segmentation.exe");
 		boolean success = toDelete.delete();
 		if (!success) {
-			IJ.error("Could not delete segmentation.exe");
+			IJ.error("Could not delete segmentation files");
 		}
+		//Delete bat file
+		File batF = new File (saveDir+"/segmenter.bat");
+		if(batF.exists()){
+			boolean batDel = batF.delete();
+			if(!batDel){
+				IJ.error("Could not delete segmenter.bat");
+			}
+		}
+		*/
 		// Inform user where files have been stored
 		//TODO: rename files and store rest in a new folder maybe?
-		IJ.log("Files saved to output folder.");
+		IJ.log("Files saved to " + saveDir);
 		workingImg.changes = false;
 		workingImg.close();
 		
