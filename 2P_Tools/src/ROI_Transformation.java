@@ -43,13 +43,11 @@ import java.io.InputStreamReader;
 public class ROI_Transformation implements PlugIn {
 	private ImagePlus lowResStack;
 	private ImagePlus hiResImg;
-	// private ImagePlus averagedImg;
 	private RoiManager hiResRois;
 	private ImageStack stack;
 	private ImageStack mosaicStack;
 	public static int defaultImg1 = 0;
 	public static int defaultImg2 = 1;
-	// private ImageStack ResOriginal;
 	private ImagePlus lowResOriginal;
 	private static boolean chkItem;
 	private static boolean transdff;
@@ -57,7 +55,6 @@ public class ROI_Transformation implements PlugIn {
 	private boolean imgStabilize;
 	private Roi Resmerged;
 	private String workDir;
-	// private String saveDir;
 	public String[] operators = { "Translation (2d)", "Affine (2d)",
 			"Rigid (2d)" };
 	public static int operator;
@@ -142,44 +139,15 @@ public class ROI_Transformation implements PlugIn {
 		if (IJ.versionLessThan("1.34p"))
 			return;
 
-		// close all other open images to avoid conflicts
-		// IJ.run("Close All", "");
-
-		// final String hiResString = "High Resolution Scan of Imaged Area";
-		// final String lowResString = "Low Resolution Image Series";
 		final String ROIString = "ROIs in .zip format";
 
 		// Panel to load images and ROI
 		Panel flowPanel = new Panel(new FlowLayout());
 		Panel myLoadPanel = new Panel(new GridLayout(1, 1));
-		// final Button loadHiResButton = new Button("Load Image (High-Res)");
-		// final Button loadStackButton = new Button("Load Series");
 		final Button loadROIButton = new Button("Load ROIs");
 		Panel myTextPanel = new Panel(new GridLayout(1, 1));
-		// final TextField highResField = new TextField(hiResString, 30);
-		// final TextField lowResField = new TextField(lowResString, 30);
 		final TextField ROIField = new TextField(ROIString, 30);
 
-		/*
-		 * //Load buttons loadHiResButton.addActionListener(new ActionListener()
-		 * { public void actionPerformed(ActionEvent e) {
-		 * IJ.showStatus("loading image"); IJ.open(); ImagePlus img1 =
-		 * IJ.getImage(); hiResImg = img1; hiResImg.hide(); //Case: Convert to
-		 * 8-bit if (img1.getBitDepth() != 8){ //hiResImg.show();
-		 * IJ.run(hiResImg, "8-bit", ""); //hiResImg.hide(); }
-		 * highResField.setText(img1.getTitle()); } });
-		 * 
-		 * loadStackButton.addActionListener(new ActionListener() { public void
-		 * actionPerformed(ActionEvent e) {
-		 * IJ.showStatus("loading image stack"); IJ.open(); ImagePlus img2 =
-		 * IJ.getImage(); workDir = img2.getOriginalFileInfo().directory;
-		 * lowResStack = img2; lowResOriginal = img2.duplicate();
-		 * lowResStack.hide(); //Case: Convert to 8-bit if ( img2.getBitDepth()
-		 * != 8) { //lowResStack.show(); IJ.run(lowResStack, "8-bit", "");
-		 * //lowResStack.hide();
-		 * 
-		 * } lowResField.setText(img2.getTitle()); } });
-		 */
 		loadROIButton.addActionListener(new ActionListener() {
 			@Override
 			@SuppressWarnings("static-access")
@@ -200,11 +168,7 @@ public class ROI_Transformation implements PlugIn {
 			}
 		});
 
-		// myTextPanel.add(highResField);
-		// myTextPanel.add(lowResField);
 		myTextPanel.add(ROIField);
-		// myLoadPanel.add(loadHiResButton);
-		// myLoadPanel.add(loadStackButton);
 		myLoadPanel.add(loadROIButton);
 		flowPanel.add(myLoadPanel);
 		flowPanel.add(myTextPanel);
@@ -267,22 +231,14 @@ public class ROI_Transformation implements PlugIn {
 		}
 		// Image Registration
 		chkItem = gd.getNextBoolean();
-
-		// Create DFF stack
-		// chkdff =gd.getNextBoolean();
-
 		// Image Stabilization
 		imgStabilize = gd.getNextBoolean();
-
 		// Delete first slice
 		deleteSlice = gd.getNextBoolean();
-
 		// Create DFF of translated stack
 		transdff = gd.getNextBoolean();
-
 		// Create plot on DFF
 		chkcalc = gd.getNextBoolean();
-
 		// get detection size
 		detSize = (int) gd.getNextNumber();
 		// Number of nearest neighbors
@@ -290,6 +246,7 @@ public class ROI_Transformation implements PlugIn {
 		// get registration type
 		String regType = gd.getNextChoice();
 
+		
 		// Working directory
 		workDir = hiResImg.getOriginalFileInfo().directory;
 
@@ -408,6 +365,7 @@ public class ROI_Transformation implements PlugIn {
 			hiResImg.setRoi(merged);
 			IJ.run(hiResImg, "Create Mask", "");
 			ImagePlus mask = WindowManager.getImage("Mask");
+			///
 			mask.show();
 			result.show();
 
@@ -430,6 +388,7 @@ public class ROI_Transformation implements PlugIn {
 			// Step 3: tranform based on alignment before
 			IJ.showStatus("Step 3/3: translating mask to original stack space");
 			transM.setTitle("translated_mask");
+			
 			transM.show();
 			IJ.run(transM, "Convert to Mask", "");
 
@@ -447,6 +406,8 @@ public class ROI_Transformation implements PlugIn {
 			stackSlice = lowResDuplicate.getProcessor(1);
 			ImagePlus sliceImg = new ImagePlus("slice1", stackSlice);
 			sliceImg.show();
+			///
+			//sliceImg.hide();
 
 			// resize image to high resolution dimensions
 			IJ.run(sliceImg,

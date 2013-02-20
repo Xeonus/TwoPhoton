@@ -22,7 +22,6 @@ import java.io.IOException;
 import ij.plugin.ImageCalculator;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
-import ij.text.TextWindow;
 import ij.util.Tools;
 
 
@@ -40,6 +39,7 @@ public class Calculate_DFF implements PlugIn {
 
 	private ImagePlus stackImg;
 	private boolean gaussFlag;
+	private boolean rawTraceFlag;
 	private boolean imgStabilize;
 	private boolean deleteSlice;
 	public static int defaultImg1=0;
@@ -95,15 +95,11 @@ public class Calculate_DFF implements PlugIn {
 				ip.setRoi(roi);
 				ImageStatistics stats = ImageStatistics.getStatistics(ip, measurements, cal);
 				analyzer.saveResults(stats, roi);			
-				analyzer.displayResults();
+				//analyzer.displayResults();
 				values[i-1] = (float)stats.mean;
 			}
 			return values;
 		}
-	
-	
-	
-	
 	
 	//Execute plugin procedures
 	@Override
@@ -178,6 +174,7 @@ public class Calculate_DFF implements PlugIn {
 	gd.addCheckbox("Delete_first_slice", false);
 	gd.addMessage("Plot and save transients for a ROI set (optional):");
 	gd.addPanel(ROIFlowPanel);
+	gd.addCheckbox("Only save raw traces", false);
 	gd.showDialog();
 
 	
@@ -189,15 +186,12 @@ public class Calculate_DFF implements PlugIn {
 	int startf0 = (int)gd.getNextNumber();
 	int endf0 = (int)gd.getNextNumber();
 	int gaussrad = (int)gd.getNextNumber();
-	//kalmanbias = (int)gd.getNextNumber();
 	imgStabilize = gd.getNextBoolean();
-	//kalmanFlag = gd.getNextBoolean();
 	gaussFlag = gd.getNextBoolean();
 	deleteSlice = gd.getNextBoolean();
+	rawTraceFlag = gd.getNextBoolean();
 	stackImg = WindowManager.getImage( idList[ defaultImg1 = gd.getNextChoiceIndex() ] );
 	workDir = stackImg.getOriginalFileInfo().directory;
-	
-	
 	
 	
 	//Delete first slice in stack:
@@ -205,12 +199,6 @@ public class Calculate_DFF implements PlugIn {
 		IJ.run(stackImg, "Delete Slice", "");
 		//stackImg.getStack().deleteSlice(1);
 	}
-	/*
-	 * Apply optional filters: 
-	 * Image Stabilizer (found in resources)
-	 * Kalman Filter
-	 * Gaussian filter
-	 */
 	
 	//Run Image Stabilizer on YFP Image Stack
 	if (imgStabilize==true) {
@@ -222,20 +210,6 @@ public class Calculate_DFF implements PlugIn {
 	}
 	
 	ImagePlus showCase = stackImg.duplicate();
-	
-	//TODO: Kalman stack filter ist not stable in Fiji
-	//Apply Kalman Filter 
-	/*
-	if (kalmanFlag==true) {
-		//To avoid 
-		stackImgYFP.show();
-		IJ.run(stackImgYFP, "Kalman Stack Filter", "acquisition_noise=.5 bias="+kalmanbias);
-		stackImgYFP.hide();
-		//reapply on other channel
-		stackImgCFP.show();
-		IJ.run(stackImgCFP, "Kalman Stack Filter", "acquisition_noise=.5 bias="+kalmanbias);
-	}
-	*/
 	
 	//Duplicate stack:
 	ImagePlus duplicateImg = stackImg.duplicate();
@@ -252,21 +226,30 @@ public class Calculate_DFF implements PlugIn {
 	int minVal = (int) istats.min;
 	int maxVal = (int) istats.max;
 	IJ.run(duplicateImg, "Subtract...", "value="+minVal+" stack");
+	duplicateImg.hide();
+	
+	
+	/*
+	 * DFF Calculations
+	 */
 	
 	//Calculate Average
 	IJ.run(duplicateImg, "Z Project...", "start=1 stop="+duplicateImg.getImageStackSize()+ " projection=[Average Intensity]");
 	ImagePlus averageImg = WindowManager.getImage("AVG_"+duplicateImg.getTitle());
 	averageImg.setTitle("Average of Stack");
+	averageImg.hide();
 	
 	//Calculate F0
 	IJ.run(duplicateImg, "Z Project...", "start="+startf0+" stop="+endf0+ " projection=[Average Intensity]");
 	ImagePlus f_zero = WindowManager.getImage("AVG_"+duplicateImg.getTitle());
 	f_zero.setTitle("F0");
+	f_zero.hide();
 	
 	//Calculate DF
 	ImageCalculator ic = new ImageCalculator();
 	ImagePlus deltaF = ic.run("Subtract create 32-bit stack", duplicateImg, f_zero);
 	deltaF.setTitle("DeltaF");
+	deltaF.hide();
 	
 	//Calculate DFF
 	ic = new ImageCalculator();
@@ -294,6 +277,7 @@ public class Calculate_DFF implements PlugIn {
 	IJ.setMinAndMax(deltaFFW, dffmin, dffmax);
 	ImagePlus deltaFFWDuplicate = deltaFFW.duplicate();
 	deltaFFWDuplicate.setTitle("dFFDup");
+	deltaFFWDuplicate.hide();
 	
 	
 	//Create an final result images to show user
@@ -314,6 +298,10 @@ public class Calculate_DFF implements PlugIn {
 	showCase.show();
 	IJ.run("Merge Image Stacks", "gray=[Channel] red=dFFDup green=*None* blue=*None* keep");
 	
+	/*
+	 * --
+	 */
+	
 	
 	//Close temporary images
 	deltaFFWDuplicate.changes = false;
@@ -324,6 +312,7 @@ public class Calculate_DFF implements PlugIn {
 	stackImg.show();
 	showCase.changes = false;
 	showCase.close();
+	
 	//Recalibrate deltaFF histogram
 	ImageStatistics deltaFstats = deltaFF.getStatistics();
 	int minFF = (int)deltaFstats.min;
@@ -334,27 +323,40 @@ public class Calculate_DFF implements PlugIn {
 	
 	//Only generate a plot if the ROI-Manager instance is not empty
 	if (RoiManager.getInstance() != null){
+		//Replace dFF with raw Image for procedures if ticked
+		if(rawTraceFlag == true){
+			deltaFF = stackImg;
+		}
 		//Create a new folder where the results are stored
-		String saveDir = workDir+"/dFF_"+stackImg.getShortTitle();
+		String saveDir;
+		if(rawTraceFlag == true){
+			saveDir = workDir+"/F_"+stackImg.getShortTitle();
+		} else {
+			saveDir = workDir+"/dFF_"+stackImg.getShortTitle();
+		}
 		File resultFolder = new File(saveDir);
 		resultFolder.mkdir();
 		
-		//Save the images to a different folder
-		String traceDir = saveDir + "/Traces";
-		File traceFolder = new File(traceDir);
-		traceFolder.mkdir();
-
-		
 		RoiManager rm = RoiManager.getInstance();
 		Roi [] translatedROIs = rm.getRoisAsArray();
+		
+		//Check if RoiManager contains ROIs
+		if(translatedROIs.length ==0){
+			IJ.error("No ROIs could be found!");
+			return;
+		}
+		
 		int rCount = rm.getCount();
 		ResultsTable fancy = new ResultsTable();
 		float[] x = new float[deltaFF.getNSlices()];
+		
 		for( int i=0; i<rCount; i++){
+			//Set ROI
 			deltaFF.setRoi(translatedROIs[i]);
-			//IJ.run(deltaFF, "Plot Z-axis Profile", "");
+			IJ.showStatus("Extracting trace data: ");
+			IJ.showProgress(1.0*i/(translatedROIs.length));
 			
-			//new method stuff here:
+			//Calibrate measurements
 			double minThreshold = deltaFF.getProcessor().getMinThreshold();
 			double maxThreshold = deltaFF.getProcessor().getMaxThreshold();
 			float [] y = getZAxisProfile(translatedROIs[i], deltaFF, minThreshold, maxThreshold);
@@ -370,7 +372,7 @@ public class Calculate_DFF implements PlugIn {
 					fancy.addValue(translatedROIs[i].getName(), x[m]);
 				}
 			}
-			//dirty way to prevent the creation of an obsolete last data column. 
+			//Dirty way to prevent the creation of an obsolete last data column. 
 			if(i==translatedROIs.length){
 				break;
 			}
@@ -397,33 +399,19 @@ public class Calculate_DFF implements PlugIn {
 				resultPlots = new ImageStack(plotSlice.getWidth(), plotSlice.getHeight());
 			}
 			resultPlots.addSlice(plotSlice.getProcessor());
-			
-			
-			//save plot here, because it is the active window instance
-			//ImagePlus plotImg = WindowManager.getCurrentImage();
-			//mosaicStack.addSlice("ROI"+ Integer.toString(i), plotImg.getProcessor());
-			//IJ.saveAs(plotImg, "Jpeg", traceDir+"/ROI"+ Integer.toString(i)+".jpg");
-			//ImagePlus plotSlice = IJ.openImage(saveDir+"/ROI"+ Integer.toString(i)+".jpg");
-			//plotImg.changes = false;
-			//plotImg.close();
-			//ResultsTable resT = ResultsTable.getResultsTable();
-			//try{
-			//	resT.saveAs(saveDir +"/ROI"+ Integer.toString(i)+".csv");
-			//}
-			//If we want to save, we have to throw an exception if it fails
-			//catch (IOException e){
-				//IJ.log("Can not find working directory");
-			//}
-			//Close ResultsTable
-			TextWindow tw = ResultsTable.getResultsWindow();
-			tw.close(false);
+
 		}
-		//finally show the new resultstable
+		
+		//Show a table with the combined results
 		fancy.show("Combined Results");
 		
 		//now save the fancy table
 		try{
-			fancy.saveAs(saveDir +"dFFData.csv");
+			if(rawTraceFlag == true){
+				fancy.saveAs(saveDir+"/FData.csv");
+			} else {
+				fancy.saveAs(saveDir +"/dFFData.csv");
+			}
 		}
 		//If we want to save, we have to throw an exception if it fails
 		catch (IOException e){
@@ -440,32 +428,12 @@ public class Calculate_DFF implements PlugIn {
 		}
 		mosaicStack = resultPlots;
 		
-		/*
-		//get first slice and initialize stack with parameters
-		ImagePlus initialSlice = IJ.openImage(traceDir+"/ROI"+ Integer.toString(0)+".jpg");
-		//Draw the name of the ROI at a nice location
-		initialSlice.getChannelProcessor().setFont(f);
-		initialSlice.getChannelProcessor().drawString("ROI"+ Integer.toString(0), 60, 240);
-		mosaicStack = new ImageStack(initialSlice.getWidth(), initialSlice.getHeight());
-		mosaicStack.addSlice("ROI"+ Integer.toString(0), initialSlice.getChannelProcessor());
-		
-		//iterate over the rest of the stack
-		for(int j=1; j<rCount; j++){
-			ImagePlus plotSlice = IJ.openImage(traceDir+"/ROI"+ Integer.toString(j)+".jpg");
-			//Draw the name of the ROI at a nice location
-			plotSlice.getChannelProcessor().setFont(f);
-			plotSlice.getChannelProcessor().drawString("ROI"+ Integer.toString(j), 60, 240);
-			mosaicStack.addSlice("ROI"+ Integer.toString(j), plotSlice.getChannelProcessor());
-			plotSlice.changes = false;
-			plotSlice.close();
-		}
-		*/
-		
 		MontageMaker mn = new MontageMaker();
 		ImagePlus mosaicImp = new ImagePlus("ROI Plots", mosaicStack);
 		mosaicImp.updateAndDraw();
 		mosaicImp.show();
-		IJ.saveAs(mosaicImp, "Tiff", traceDir+"/ROI Plots.tif");
+		//IJ.saveAs(mosaicImp, "Tiff", traceDir+"/ROI Plots.tif");
+		
 		////find smallest square grid configuration for mosaic
 		int mosRows= 1+(int)Math.floor(Math.sqrt(mosaicStack.getSize()));
 		int mosCols=mosRows-1;
@@ -474,6 +442,8 @@ public class Calculate_DFF implements PlugIn {
 		mn.makeMontage(mosaicImp, mosRows, mosCols, 1.0, 1, mosaicStack.getSize(), 1, 1, false);
 		mosaicImp.changes = false;
 		mosaicImp.close();
+		ImagePlus collage = WindowManager.getImage("Montage");
+		IJ.saveAs(collage, "Jpeg", saveDir +"/Montage.jpg");
 		
 	}
 
