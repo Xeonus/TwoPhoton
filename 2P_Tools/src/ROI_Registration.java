@@ -4,22 +4,12 @@ import ij.ImageStack;
 import ij.Macro;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
-import ij.gui.Plot;
-import ij.gui.ProfilePlot;
 import ij.gui.Roi;
 import ij.gui.ShapeRoi;
-import ij.measure.Calibration;
-import ij.measure.ResultsTable;
-import ij.plugin.ImageCalculator;
-import ij.plugin.MontageMaker;
 import ij.plugin.PlugIn;
-import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
-import ij.process.ImageStatistics;
-import ij.util.Tools;
-
 import java.awt.Button;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -28,7 +18,6 @@ import java.awt.Panel;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -44,7 +33,7 @@ import java.io.InputStreamReader;
  * @version 0.3
  */
 
-public class ROI_Transformation implements PlugIn {
+public class ROI_Registration implements PlugIn {
 	private ImagePlus lowResStack;
 	private ImagePlus hiResImg;
 	private RoiManager hiResRois;
@@ -137,38 +126,7 @@ public class ROI_Transformation implements PlugIn {
 		}
 		return text;
 	}
-
-	/**
-	 * Method to calculate the Z-axis profile of an image with a roi selection
-	 * 
-	 * @param roi
-	 * @param toAnalyze
-	 * @param minThreshold
-	 * @param maxThreshold 
-	 */
 	
-	float[] getZAxisProfile(Roi roi, ImagePlus toAnalyze, double minThreshold, double maxThreshold) {
-		ImageStack stack = toAnalyze.getStack();
-		int size = stack.getSize();
-		float[] values = new float[size];
-		Calibration cal = toAnalyze.getCalibration();
-		Analyzer analyzer = new Analyzer(toAnalyze);
-		@SuppressWarnings("static-access")
-		int measurements = analyzer.getMeasurements();
-		//int current = toAnalyze.getCurrentSlice();
-		for (int i=1; i<=size; i++) {
-			toAnalyze.setSlice(i);
-			ImageProcessor ip = stack.getProcessor(i);
-			if (minThreshold!=ImageProcessor.NO_THRESHOLD)
-				ip.setThreshold(minThreshold,maxThreshold,ImageProcessor.NO_LUT_UPDATE);
-			ip.setRoi(roi);
-			ImageStatistics stats = ImageStatistics.getStatistics(ip, measurements, cal);
-			analyzer.saveResults(stats, roi);			
-			//analyzer.displayResults();
-			values[i-1] = (float)stats.mean;
-		}
-		return values;
-	}
 	
 	
 	// Execute PlugIn procedures.
@@ -229,21 +187,21 @@ public class ROI_Transformation implements PlugIn {
 
 		// Generate dialog box
 		GenericDialog gd = new GenericDialog(
-				"ROI Transformation Tool", IJ.getInstance());
+				"ROI Registration Tool", IJ.getInstance());
 		gd.addChoice("High_Resolution Image", imgList, imgList[defaultImg1]);
 		gd.addChoice("Time_Series (to register)", imgList, imgList[defaultImg2]);
 		gd.addPanel(flowPanel);
 		gd.addMessage("Image Registration:", f);
-		gd.addCheckbox("Perform_Registration", chkItem);
-		gd.addChoice("Registration_Method:", operators, operators[operator]);
+		//gd.addCheckbox("Perform_Registration", chkItem);
+		//gd.addChoice("Registration_Method:", operators, operators[operator]);
 		gd.addNumericField("Approx_size_of_detection (px):", 5, 1);
 		gd.addNumericField("Number_of_neighbors:", 5, 1);
 		gd.addCheckbox("Image_Stabilization", imgStabilize);
 		gd.addCheckbox("Delete_first_slice?", deleteSlice);
-		gd.addMessage("Data analysis:", f);
+		//gd.addMessage("Data analysis:", f);
 		// gd.addCheckbox("Create dF/F of original stack", chkdff);
-		gd.addCheckbox("Create dF/F of registered stack", transdff);
-		gd.addCheckbox("Save dF/F analysis of ROIs to folder", chkcalc);
+		//gd.addCheckbox("Create dF/F of registered stack", transdff);
+		//gd.addCheckbox("Save dF/F analysis of ROIs to folder", chkcalc);
 		gd.showDialog();
 		String resourcePath = "/resources/";
 
@@ -268,22 +226,22 @@ public class ROI_Transformation implements PlugIn {
 			lowResStack.hide();
 		}
 		// Image Registration
-		chkItem = gd.getNextBoolean();
+		//chkItem = gd.getNextBoolean();
 		// Image Stabilization
 		imgStabilize = gd.getNextBoolean();
 		// Delete first slice
 		deleteSlice = gd.getNextBoolean();
 		// Create DFF of translated stack
-		transdff = gd.getNextBoolean();
+		//transdff = gd.getNextBoolean();
 		// Create plot on DFF
-		chkcalc = gd.getNextBoolean();
+		//chkcalc = gd.getNextBoolean();
 		// get detection size
 		detSize = (int) gd.getNextNumber();
 		// Number of nearest neighbors
 		nOfN = (int) gd.getNextNumber();
 		// get registration type
-		String regType = gd.getNextChoice();
-
+		//String regType = gd.getNextChoice();
+		String regType = "Translation (2d)";
 		
 		// Working directory
 		workDir = hiResImg.getOriginalFileInfo().directory;
@@ -295,13 +253,6 @@ public class ROI_Transformation implements PlugIn {
 		if (hiResRois == null) {
 			IJ.error("No ROIs have been loaded!");
 			return;
-		}
-
-		// set transDff to true for plotting.
-		if (chkcalc == true) {
-			if (transdff == false) {
-				transdff = true;
-			}
 		}
 
 		// Delete first slice in stack:
@@ -369,7 +320,6 @@ public class ROI_Transformation implements PlugIn {
 		// If checkbox is ticked, perform the image registration and translation
 		// of the ROIs
 		IJ.showStatus("ROIs merged");
-		if (chkItem == true) {
 			hiResImg.show();
 			IJ.showStatus("Step 1/3: Register source to averaged stack image");
 			IJ.showProgress(25, 100);
@@ -455,7 +405,7 @@ public class ROI_Transformation implements PlugIn {
 							+ Integer.toString(hiResImg.getHeight())
 							+ " depth=" + Integer.toString(stackSize)
 							+ " constrain interpolation=None");
-			// Reapply registration performed on average and high res source
+			// Reapply registration performed on average and highres source
 			IJ.run("Descriptor-based registration (2d/3d)",
 					"first_image=slice1 second_image=" + hiResImg.getTitle()
 							+ " reapply");
@@ -482,6 +432,7 @@ public class ROI_Transformation implements PlugIn {
 			lowResOriginal.show();
 			hiResImg.show();
 
+			
 			/*
 			 * THREAD BASED REGISTRATION OF IMAGE STACKNote: The only possible
 			 * way to hide images generated by the descriptor based analysis
@@ -490,9 +441,6 @@ public class ROI_Transformation implements PlugIn {
 			thread.setName("Run$_create_image");
 			Macro.setOptions(thread, "img_name1='" + lowResOriginal.getTitle()
 					+ "' img_name2='" + hiResImg.getTitle() + "'");
-			// IJ.runMacroFile("translate",
-			// "to_register="+lowResOriginal.getTitle()+" reference="+hiResImg.getTitle()+"'");
-			// IJ.runMacroFile("translate", "");
 			IJ.runMacro(getText(resourcePath + "translate.ijm"),
 					"to_register=" + lowResOriginal.getTitle() + " reference="
 							+ hiResImg.getTitle() + "'");
@@ -542,231 +490,4 @@ public class ROI_Transformation implements PlugIn {
 			result.close();
 		}
 
-		// create Delta F/F of translated stack
-		if (transdff == true) {
-			// Step 1: Subtract the average image from image stack:
-			ImageCalculator ic = new ImageCalculator();
-			ImagePlus finalImage = WindowManager.getImage("Translated stack");
-			// Background subtraction:
-			ImageStatistics istats = finalImage.getStatistics();
-			int minVal = (int) istats.min;
-			// First subtract background:
-			IJ.run(finalImage, "Select All", "");
-			IJ.run(finalImage, "Subtract...",
-					"value=" + Integer.toString(minVal) + " stack");
-
-			// Recalculate Average in easier way than above and in 16bit
-			IJ.run(finalImage, "Z Project...",
-					"start=1 stop=" + finalImage.getImageStackSize()
-							+ " projection=[Average Intensity]");
-			ImagePlus transavg_16bit = WindowManager.getImage("AVG_"
-					+ finalImage.getTitle());
-
-			IJ.run(channel1, "Select All", "");
-			ImagePlus transdF = ic.run("Substract create 32-bit stack",
-					finalImage, transavg_16bit);
-
-			ic = new ImageCalculator();
-			transdFF = ic.run("Divide create 32-bit stack", transdF,
-					transavg_16bit);
-			// Express as percentage change:
-			IJ.run(transdFF, "Multiply...", "stack value=100");
-			IJ.run(transdFF, "Enhance Contrast", "saturated=0.35");
-			transdFF.setTitle("dF/F of translated time series");
-			transdFF.show();
-			transavg_16bit.changes = false;
-			transavg_16bit.close();
-			result.changes = false;
-			result.close();
-			// Reset the selection on the showcase images
-			channel1.setRoi(Resmerged);
-			// enhance images for visual purposes.
-			// ImageStatistics finalstats = finalImage.getStatistics();
-			// IJ.setMinAndMax(finalImage, (int)finalstats.min,
-			// (int)finalstats.max);
-			IJ.run(finalImage, "Enhance Contrast", "saturated=0.35");
-			finalImage.setRoi(Resmerged);
-			transdFF.setRoi(Resmerged);
-
-		}
-
-		if (chkcalc == true) {
-			// Create a new folder where the results are stored
-			String saveDir = workDir + "/dFF_"
-					+ lowResOriginal.getShortTitle();
-			File resultFolder = new File(saveDir);
-			resultFolder.mkdir();
-			RoiManager rm = RoiManager.getInstance();
-			Roi[] translatedROIs = rm.getRoisAsArray();
-			//Check if RoiManager contains ROIs
-			if(translatedROIs.length ==0){
-				IJ.error("No ROIs could be found!");
-				return;
-			}
-			
-			int rCount = rm.getCount();
-			ResultsTable fancy = new ResultsTable();
-			float[] x = new float[transdFF.getNSlices()];
-			
-			for( int i=0; i<rCount; i++){
-				//Set ROI
-				transdFF.setRoi(translatedROIs[i]);
-				IJ.showStatus("Extracting trace data: ");
-				IJ.showProgress(1.0*i/(translatedROIs.length));
-				
-				//Calibrate measurements
-				double minThreshold = transdFF.getProcessor().getMinThreshold();
-				double maxThreshold = transdFF.getProcessor().getMaxThreshold();
-				float [] y = getZAxisProfile(translatedROIs[i], transdFF, minThreshold, maxThreshold);
-				
-				//Initialize Table with zero values
-				if(i==0){
-					//float[] x = new float[y.length];
-					for (int n=0; n<x.length; n++)
-						x[n] = n+1;
-					//First add slice label
-					for(int m=0; m<x.length; m++){
-						fancy.incrementCounter();
-						fancy.addValue(translatedROIs[i].getName(), x[m]);
-					}
-				}
-				//Dirty way to prevent the creation of an obsolete last data column. 
-				if(i==translatedROIs.length){
-					break;
-				}
-				//now add values to resultstable
-				for (int h=0; h<y.length; h++ ){
-					//Set values for table elements
-					fancy.addValue(translatedROIs[i].getName(), y[h]);
-					fancy.setValue(i, h, y[h]);
-				}
-				
-				//We create a plot of the measurement, but do not show it
-				//instead we create an imageplus reference for later and add it to a stack
-				String xAxisLabel = "Slice";
-				Plot plot = new Plot("Roi "+Integer.toString(i), xAxisLabel, "Mean", x, y);
-				double ymin = ProfilePlot.getFixedMin();
-				double ymax= ProfilePlot.getFixedMax();
-				if (!(ymin==0.0 && ymax==0.0)) {
-					double[] a = Tools.getMinMax(x);
-					double xmin=a[0]; double xmax=a[1];
-					plot.setLimits(xmin, xmax, ymin, ymax);
-				}
-				ImagePlus plotSlice = plot.getImagePlus();
-				if( i==0){
-					resultPlots = new ImageStack(plotSlice.getWidth(), plotSlice.getHeight());
-				}
-				resultPlots.addSlice(plotSlice.getProcessor());
-
-			}
-			
-			//Show a table with the combined results
-			fancy.show("Combined Results");
-			
-			//now save the fancy table
-			try{
-				fancy.saveAs(saveDir +"/dFFData.csv");
-			}
-			//If we want to save, we have to throw an exception if it fails
-			catch (IOException e){
-				IJ.log("Can not save to working directory!");
-			}
-			
-			
-			//new method: create a plot on my own now and do not save images!
-			//we have now resultplots and use this to generate the mosaic
-			//ImagePlus initialSlice = new ImagePlus("ini", resultPlots.getProcessor(0));
-			for(int j=1; j<rCount; j++){
-				resultPlots.getProcessor(j).setFont(f);
-				resultPlots.getProcessor(j).drawString("ROI"+ Integer.toString(j), 60, 240);
-			}
-			mosaicStack = resultPlots;
-			
-			MontageMaker mn = new MontageMaker();
-			ImagePlus mosaicImp = new ImagePlus("ROI Plots", mosaicStack);
-			mosaicImp.updateAndDraw();
-			mosaicImp.show();
-			//IJ.saveAs(mosaicImp, "Tiff", traceDir+"/ROI Plots.tif");
-			
-			////find smallest square grid configuration for mosaic
-			int mosRows= 1+(int)Math.floor(Math.sqrt(mosaicStack.getSize()));
-			int mosCols=mosRows-1;
-			while (mosRows*mosCols<mosaicStack.getSize())
-				mosCols++;
-			mn.makeMontage(mosaicImp, mosRows, mosCols, 1.0, 1, mosaicStack.getSize(), 1, 1, false);
-			mosaicImp.changes = false;
-			mosaicImp.close();
-			ImagePlus collage = WindowManager.getImage("Montage");
-			IJ.saveAs(collage, "Jpeg", saveDir +"/Montage.jpg");
-			
-		}
-			
-			
-			
-			/*
-			for (int i = 0; i < rCount; i++) {
-				transdFF.setRoi(translatedROIs[i]);
-				IJ.run(transdFF, "Plot Z-axis Profile", "");
-				// save plot here, because it is the active window instance
-				ImagePlus plotImg = WindowManager.getCurrentImage();
-				// mosaicStack.addSlice("ROI"+ Integer.toString(i),
-				// plotImg.getProcessor());
-				IJ.saveAs(plotImg, "Jpeg",
-						saveDir + "/ROI" + Integer.toString(i) + ".jpg");
-				// ImagePlus plotSlice = IJ.openImage(saveDir+"/ROI"+
-				// Integer.toString(i)+".jpg");
-				plotImg.changes = false;
-				plotImg.close();
-				ResultsTable resT = ResultsTable.getResultsTable();
-				try {
-					resT.saveAs(saveDir + "/ROI" + Integer.toString(i) + ".csv");
-				}
-				// If we want to save, we have to throw an exception if it fails
-				catch (IOException e) {
-					IJ.log("Can not find working directory");
-				}
-				// Close ResultsTable
-				TextWindow tw = ResultsTable.getResultsWindow();
-				tw.close(false);
-			}
-			// get first slice and initialize stack with parameters
-			ImagePlus initialSlice = IJ.openImage(saveDir + "/ROI"
-					+ Integer.toString(0) + ".jpg");
-			// Draw the name of the ROI at a nice location
-			initialSlice.getChannelProcessor().setFont(f);
-			initialSlice.getChannelProcessor().drawString(
-					"ROI" + Integer.toString(0), 60, 240);
-			mosaicStack = new ImageStack(initialSlice.getWidth(),
-					initialSlice.getHeight());
-			mosaicStack.addSlice("ROI" + Integer.toString(0),
-					initialSlice.getChannelProcessor());
-			// iterate over the rest of the stack
-			for (int j = 1; j < rCount; j++) {
-				ImagePlus plotSlice = IJ.openImage(saveDir + "/ROI"
-						+ Integer.toString(j) + ".jpg");
-				// Draw the name of the ROI at a nice location
-				plotSlice.getChannelProcessor().setFont(f);
-				plotSlice.getChannelProcessor().drawString(
-						"ROI " + Integer.toString(j), 60, 240);
-				mosaicStack.addSlice("ROI" + Integer.toString(j),
-						plotSlice.getChannelProcessor());
-				plotSlice.changes = false;
-				plotSlice.close();
-			}
-			MontageMaker mn = new MontageMaker();
-			ImagePlus mosaicImp = new ImagePlus("ROI Plots", mosaicStack);
-			mosaicImp.updateAndDraw();
-			// //find smallest square grid configuration for mosaic
-			int mosRows = 1 + (int) Math
-					.floor(Math.sqrt(mosaicStack.getSize()));
-			int mosCols = mosRows - 1;
-			while (mosRows * mosCols < mosaicStack.getSize())
-				mosCols++;
-			mn.makeMontage(mosaicImp, mosRows, mosCols, 1.0, 1,
-					mosaicStack.getSize(), 1, 1, false);
-					*/
-
-		}
-
-}
-
+	}

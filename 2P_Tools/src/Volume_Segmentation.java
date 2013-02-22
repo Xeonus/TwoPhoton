@@ -6,11 +6,13 @@ import java.awt.Panel;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.InputStream;
 
@@ -150,9 +152,9 @@ public class Volume_Segmentation implements PlugIn {
 		int xx = 0;
 		int yy = 0;
 		;
-		IJ.log("Enhancing local contrast...");
+		IJ.showStatus("Enhancing local contrast...");
 		for (int i = 0; i < nmax; i++) {
-			// IJ.log("Iteration"+i/nmax*100+"% complete");
+			IJ.showProgress(1.0*(double)i/((double)nmax));
 			for (int j = 0; j < nmax; j++) {
 				// Create ROI
 				Roi rect = new Roi(xx, yy, width, width);
@@ -318,7 +320,7 @@ public class Volume_Segmentation implements PlugIn {
 		 * Execute 2dsegment in output folder
 		 * Check if segmentation worked and clean up folder
 		**/
-		IJ.log("Executing gradient flow algorithm");
+		IJ.showStatus("Preparing files...");
 		InputStream stream = getClass().getResourceAsStream(
 				"/resources/3dsegment_16bit.exe");
 		if (stream == null) {
@@ -364,7 +366,14 @@ public class Volume_Segmentation implements PlugIn {
 			out.close();
 			
 			//Execute bat file
-			proc = rt.exec("cmd /C "+saveDir + "/segmenter.bat");
+			IJ.showStatus("Executing segmentation...");
+			proc = rt.exec(saveDir + "/segmenter.bat");
+			//We have to read the input and output streams to prevent locking the process!
+			BufferedReader input = new BufferedReader (new InputStreamReader(proc.getInputStream()));
+			String line;
+			while((line = input.readLine()) !=null){
+				System.out.println(line);
+			}
 			proc.waitFor();
 			
 			// wait is neccessary not to call a forked process that waitFor can
@@ -382,9 +391,7 @@ public class Volume_Segmentation implements PlugIn {
 		}
 
 		// Clean up directory and continue processing
-		IJ.log("Processing finished");
-		/*
-		IJ.log("Cleaning up data");
+		IJ.showStatus("Processing finished");
 		File toDelete = new File(saveDir + "/segmentation.exe");
 		boolean success = toDelete.delete();
 		if (!success) {
@@ -398,10 +405,9 @@ public class Volume_Segmentation implements PlugIn {
 				IJ.error("Could not delete segmenter.bat");
 			}
 		}
-		*/
 		// Inform user where files have been stored
 		//TODO: rename files and store rest in a new folder maybe?
-		IJ.log("Files saved to " + saveDir);
+		IJ.showStatus("Files saved to " + saveDir);
 		workingImg.changes = false;
 		workingImg.close();
 		

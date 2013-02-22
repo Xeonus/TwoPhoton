@@ -363,13 +363,12 @@ public class Calculate_DFF implements PlugIn {
 			
 			//Initialize Table with zero values
 			if(i==0){
-				//float[] x = new float[y.length];
 				for (int n=0; n<x.length; n++)
 					x[n] = n+1;
 				//First add slice label
 				for(int m=0; m<x.length; m++){
-					fancy.incrementCounter();
-					fancy.addValue(translatedROIs[i].getName(), x[m]);
+						fancy.incrementCounter();
+						fancy.addValue(translatedROIs[i].getName(), x[m]);
 				}
 			}
 			//Dirty way to prevent the creation of an obsolete last data column. 

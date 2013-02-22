@@ -6,11 +6,13 @@ import java.awt.Panel;
 import java.awt.TextField;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.InputStream;
 import java.net.URL;
@@ -137,9 +139,9 @@ public class Series_Segmentation implements PlugIn {
 		// ROI Coordinates
 		int xx = 0;
 		int yy = 0;
-		IJ.log("Enhancing local contrast...");
+		IJ.showStatus("Enhancing local contrast...");
 		for (int i = 0; i < nmax; i++) {
-			// IJ.log("Iteration"+i/nmax*100+"% complete");
+			IJ.showProgress(1.0*(double)i/((double)nmax));
 			for (int j = 0; j < nmax; j++) {
 				// Create ROI
 				Roi rect = new Roi(xx, yy, width, width);
@@ -342,7 +344,7 @@ public class Series_Segmentation implements PlugIn {
 		 * Execute 2dsegment in output folder
 		 * Check if segmentation worked and clean up folder
 		**/
-		IJ.log("Executing gradient flow algorithm");
+		IJ.showStatus("Executing gradient flow algorithm");
 		
 		//Extracting additional core dll files for 2dsegment.exe
 		CodeSource src = getClass().getProtectionDomain().getCodeSource();
@@ -402,7 +404,7 @@ public class Series_Segmentation implements PlugIn {
 		if(ogbImg.getHeight() < 100 || ogbImg.getWidth() < 100){
 			stream = getClass().getResourceAsStream(
 					"/resources/2dSmallSegment.exe");
-			IJ.log("Executing segmentation for small images");
+			IJ.showStatus("Executing segmentation for small images");
 		}else{
 			
 			stream = getClass().getResourceAsStream(
@@ -456,7 +458,16 @@ public class Series_Segmentation implements PlugIn {
 			out.close();
 			
 			//Execute bat file
+			IJ.showStatus("Executing Segmentation...");
 			proc = rt.exec(saveDir + "/segmenter.bat");
+			
+			//We have to read the input and output streams to prevent locking the process!
+			BufferedReader input = new BufferedReader (new InputStreamReader(proc.getInputStream()));
+			String line;
+			while((line = input.readLine()) !=null){
+				System.out.println(line);
+			}
+			
 			proc.waitFor();
 			
 			
@@ -490,17 +501,14 @@ public class Series_Segmentation implements PlugIn {
 				IJ.error("Could not delete segmenter.bat");
 			}
 		}
-		
-		// Inform user where files have been stored
-		// TODO: rename files and store rest in a new folder maybe?
-
+	
 		// Extract Regions of interest
 		// Make image Binary and count particles, then show it on the averaged
 		// image
 		File chkSeg = new File(saveDir + "RegionCellNucleiSegGVF_"+"TODO_"+ originalName+ ".tif");
 		if(chkSeg.exists()){
-			IJ.log("Processing finished");
-			IJ.log("Cleaned up data");
+			IJ.showStatus("Processing finished");
+			IJ.showStatus("Cleaned up data");
 			ImagePlus segmented = IJ.openImage(saveDir + "RegionCellNucleiSegGVF_"
 				+ "TODO_" + originalName + ".tif");
 			ImagePlus binarySegmentation = makeBinary(segmented);
@@ -517,7 +525,7 @@ public class Series_Segmentation implements PlugIn {
 			workingImg.changes = false;
 			workingImg.close();
 			ogbImg.show();
-			IJ.log("RoiSet.zip has been saved to: " + saveDir);
+			IJ.showStatus("RoiSet.zip has been saved to: " + saveDir);
 			RoiManager rm = RoiManager.getInstance();
 			rm.runCommand("Save", saveDir+originalName+"_RoiSet.zip");
 			srImg.hide();
