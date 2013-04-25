@@ -42,6 +42,7 @@ public class Calculate_DFF implements PlugIn {
 	private boolean rawTraceFlag;
 	private boolean imgStabilize;
 	private boolean deleteSlice;
+	private boolean bgSubtract;
 	public static int defaultImg1=0;
 	private String workDir;
 	private ImageStack mosaicStack;
@@ -172,6 +173,7 @@ public class Calculate_DFF implements PlugIn {
 	//gd.addCheckbox("Kalman?", false);
 	gd.addCheckbox("Gauss_Filter", false);
 	gd.addCheckbox("Delete_first_slice", false);
+	gd.addCheckbox("Background Subtraction", false);
 	gd.addMessage("Plot and save transients for a ROI set (optional):");
 	gd.addPanel(ROIFlowPanel);
 	gd.addCheckbox("Only save raw traces", false);
@@ -189,6 +191,7 @@ public class Calculate_DFF implements PlugIn {
 	imgStabilize = gd.getNextBoolean();
 	gaussFlag = gd.getNextBoolean();
 	deleteSlice = gd.getNextBoolean();
+	bgSubtract = gd.getNextBoolean();
 	rawTraceFlag = gd.getNextBoolean();
 	stackImg = WindowManager.getImage( idList[ defaultImg1 = gd.getNextChoiceIndex() ] );
 	workDir = stackImg.getOriginalFileInfo().directory;
@@ -196,11 +199,13 @@ public class Calculate_DFF implements PlugIn {
 	
 	//Delete first slice in stack:
 	if (deleteSlice == true){
+		//make sure we return to first slice, if user manipulated the sack!
+		stackImg.setSlice(1);
 		IJ.run(stackImg, "Delete Slice", "");
 		//stackImg.getStack().deleteSlice(1);
 	}
 	
-	//Run Image Stabilizer on YFP Image Stack
+	//Run Image Stabilizer on Image Stack
 	if (imgStabilize==true) {
 		stackImg.show();
 		IJ.run(stackImg, "Image Stabilizer", "transformation=Translation maximum_pyramid_levels=1 " +
@@ -225,7 +230,9 @@ public class Calculate_DFF implements PlugIn {
 	ImageStatistics istats = duplicateImg.getStatistics();
 	int minVal = (int) istats.min;
 	int maxVal = (int) istats.max;
-	IJ.run(duplicateImg, "Subtract...", "value="+minVal+" stack");
+	if (bgSubtract == true){
+		IJ.run(duplicateImg, "Subtract...", "value="+minVal+" stack");
+	}
 	duplicateImg.hide();
 	
 	

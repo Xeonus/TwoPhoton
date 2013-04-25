@@ -135,10 +135,11 @@ public class Image_Segmentation implements PlugIn {
 			// ROI Coordinates
 			int xx = 0;
 			int yy = 0;
-			IJ.log("Enhancing local contrast...");
+			IJ.showStatus("Enhancing local contrast...");
 			for (int i = 0; i < nmax; i++) {
 				// IJ.log("Iteration"+i/nmax*100+"% complete");
 				for (int j = 0; j < nmax; j++) {
+					IJ.showProgress(1.0*(double)i/((double)nmax));
 					// Create ROI
 					Roi rect = new Roi(xx, yy, width, width);
 					enhanced.setRoi(rect);
@@ -254,7 +255,7 @@ public class Image_Segmentation implements PlugIn {
 			loadDirectoryButton.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					IJ.showStatus("Choose output Direcotry");
+					IJ.showStatus("Choose output direcotry");
 					DirectoryChooser dirC = new DirectoryChooser(
 							"Select output path");
 					saveDir = dirC.getDirectory();
@@ -491,8 +492,8 @@ public class Image_Segmentation implements PlugIn {
 			// image
 			File chkSeg = new File(saveDir + "RegionCellNucleiSegGVF_"+"TODO_"+ originalName+ ".tif");
 			if(chkSeg.exists()){
-				IJ.log("Processing finished");
-				IJ.log("Cleaned up data");
+				IJ.showStatus("Processing finished");
+				IJ.showStatus("Cleaned up data");
 				ImagePlus segmented = IJ.openImage(saveDir + "RegionCellNucleiSegGVF_"
 					+ "TODO_" + originalName + ".tif");
 				ImagePlus binarySegmentation = makeBinary(segmented);
@@ -504,12 +505,18 @@ public class Image_Segmentation implements PlugIn {
 				binarySegmentation.close();
 				
 				//Rename ROIs
+				RoiManager rma = RoiManager.getInstance();
+				if (rma.getCount() == 0){
+					IJ.error("No ROIs found! Change parameters.");
+					sourceImg.show();
+					return;
+				}
 				renameROIs();
 				//and show them in the original image
 				workingImg.changes = false;
 				workingImg.close();
 				sourceImg.show();
-				IJ.log("RoiSet.zip has been saved to: " + saveDir);
+				IJ.showStatus("Files saved in: " + saveDir);
 				RoiManager rm = RoiManager.getInstance();
 				rm.runCommand("Save", saveDir+originalName+"_RoiSet.zip");
 				rm.runCommand("Show All");

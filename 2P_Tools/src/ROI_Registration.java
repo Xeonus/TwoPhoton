@@ -37,17 +37,14 @@ public class ROI_Registration implements PlugIn {
 	private ImagePlus lowResStack;
 	private ImagePlus hiResImg;
 	private RoiManager hiResRois;
-	private ImageStack resultPlots;
 	private ImageStack stack;
-	private ImageStack mosaicStack;
 	public static int defaultImg1 = 0;
 	public static int defaultImg2 = 1;
 	private ImagePlus lowResOriginal;
-	private static boolean chkItem;
 	private static boolean transdff;
-	private static boolean chkcalc;
 	private boolean imgStabilize;
 	private Roi Resmerged;
+	@SuppressWarnings("unused")
 	private String workDir;
 	public String[] operators = { "Translation (2d)", "Affine (2d)",
 			"Rigid (2d)" };

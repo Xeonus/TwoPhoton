@@ -329,11 +329,13 @@ public class Series_Segmentation implements PlugIn {
 			resultFolder.mkdir();
 			//return;
 		}
-		
+		//Only work with the averaged image for better results!
+		IJ.run(workingImg, "Z Project...", "start=1 stop="+workingImg.getImageStackSize()+ " projection=[Average Intensity]");
+		ImagePlus averageImg = WindowManager.getImage("AVG_"+workingImg.getTitle());
 		workingImg.show();
 		//IJ.run(workingImg, "Enhance Contrast", "saturated=0.35");
 		workingImg.setTitle("TODO_" + originalName);
-		IJ.saveAs(workingImg, "Tiff", saveDir + "/TODO_" + originalName
+		IJ.saveAs(averageImg, "Tiff", saveDir + "/TODO_" + originalName
 				+ ".tiff");
 		IJ.saveAs(workingImg, "Tiff", saveDir + "/enhancedContrast_"
 				+ originalName + ".tiff");

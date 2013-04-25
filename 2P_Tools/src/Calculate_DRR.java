@@ -51,6 +51,7 @@ public class Calculate_DRR implements PlugIn {
 	private boolean deleteSlice;
 	private String workDir;
 	private ImageStack mosaicStack;
+	private boolean bgSubtract;
 	public static int defaultImg1=0;
 	public static int defaultImg2=1;
 	private ImageStack resultPlots;
@@ -164,6 +165,7 @@ public class Calculate_DRR implements PlugIn {
 	//gd.addCheckbox("Kalman?", false);
 	gd.addCheckbox("Gauss_Filter", false);
 	gd.addCheckbox("Delete_first_slice", false);
+	gd.addCheckbox("Background Subtraction", false);
 	gd.addMessage("Plot and save transients for a ROI set (optional):");
 	gd.addPanel(ROIFlowPanel);
 	gd.showDialog();
@@ -183,6 +185,7 @@ public class Calculate_DRR implements PlugIn {
 	//kalmanFlag = gd.getNextBoolean();
 	gaussFlag = gd.getNextBoolean();
 	deleteSlice = gd.getNextBoolean();
+	bgSubtract = gd.getNextBoolean();
 
 	
 	stackImgCFP = WindowManager.getImage( idList[ defaultImg1 = gd.getNextChoiceIndex() ] );
@@ -192,9 +195,10 @@ public class Calculate_DRR implements PlugIn {
 	
 	//Delete first slice in stack:
 	if (deleteSlice == true){
+		stackImgYFP.setSlice(1);
 		IJ.run(stackImgYFP, "Delete Slice", "");
+		stackImgCFP.setSlice(1);
 		IJ.run(stackImgCFP, "Delete Slice", "");
-		//stackImg.getStack().deleteSlice(1);
 	}
 	
 	//Run Image Stabilizer on YFP Image Stack
@@ -221,9 +225,11 @@ public class Calculate_DRR implements PlugIn {
 	}
 
 	// background subtraction Stack 1, here finding the minimum value and taking this as bkg
-	ImageStatistics istatsYFP = duplicateYFP.getStatistics();
-	int minValYFP = (int) istatsYFP.min;
-	IJ.run(duplicateYFP, "Subtract...", "value="+minValYFP+" stack");
+	if(bgSubtract == true){
+		ImageStatistics istatsYFP = duplicateYFP.getStatistics();
+		int minValYFP = (int) istatsYFP.min;
+		IJ.run(duplicateYFP, "Subtract...", "value="+minValYFP+" stack");
+	}
 	duplicateYFP.hide();
 	
 	//Calculate Average
@@ -240,9 +246,11 @@ public class Calculate_DRR implements PlugIn {
 	}
 	
 	// Background subtraction of second duplicated image (duplicatedCFP)
-	ImageStatistics istatsCFP = duplicateCFP.getStatistics();
-	int minValCFP = (int) istatsCFP.min;
-	IJ.run(duplicateCFP, "Subtract...", "value="+minValCFP+" stack");
+	if (bgSubtract == true){
+		ImageStatistics istatsCFP = duplicateCFP.getStatistics();
+		int minValCFP = (int) istatsCFP.min;
+		IJ.run(duplicateCFP, "Subtract...", "value="+minValCFP+" stack");
+	}
 	duplicateCFP.hide();
 
 	//Calculate DRR
