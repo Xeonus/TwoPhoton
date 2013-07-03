@@ -22,6 +22,7 @@ import java.util.zip.ZipInputStream;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.Prefs;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.Roi;
@@ -227,6 +228,9 @@ public class Image_Segmentation implements PlugIn {
 				IJ.showMessage("This Plugin is only supported on Windows machines!");
 				return;
 			}
+			
+			//Set black background preferences for proper particle analysis!
+			Prefs.blackBackground = true;
 
 			final int[] idList = WindowManager.getIDList();
 
@@ -437,10 +441,10 @@ public class Image_Segmentation implements PlugIn {
 			
 			try {
 				
-				//Create a bat file and execut the commands.
+				//Create a bat file and execute the commands.
 				//We need to escape the string set to avoid deletion of white space!
 				String cmdStrings = "cmd /C " + "\"\""+saveDir
-						+ "segmentation.exe\""+" "+ "\""+ saveDir + "TODO_"+originalName+".tif\"\"";
+						+ "segmentation.exe\""+" "+ "\""+ saveDir + "TODO_"+originalName+".tiff\"\"";
 				String batName = "segmenter.bat";
 				
 				FileWriter fstream = new FileWriter(saveDir+batName, true);
@@ -490,12 +494,12 @@ public class Image_Segmentation implements PlugIn {
 			// Extract Regions of interest
 			// Make image Binary and count particles, then show it on the averaged
 			// image
-			File chkSeg = new File(saveDir + "RegionCellNucleiSegGVF_"+"TODO_"+ originalName+ ".tif");
+			File chkSeg = new File(saveDir + "RegionCellNucleiSegGVF_"+"TODO_"+ originalName+ ".tiff");
 			if(chkSeg.exists()){
 				IJ.showStatus("Processing finished");
 				IJ.showStatus("Cleaned up data");
 				ImagePlus segmented = IJ.openImage(saveDir + "RegionCellNucleiSegGVF_"
-					+ "TODO_" + originalName + ".tif");
+					+ "TODO_" + originalName + ".tiff");
 				ImagePlus binarySegmentation = makeBinary(segmented);
 				binarySegmentation.show();
 				IJ.run(binarySegmentation, "Analyze Particles...",

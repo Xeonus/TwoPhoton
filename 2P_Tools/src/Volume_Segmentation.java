@@ -18,6 +18,7 @@ import java.io.InputStream;
 
 import ij.IJ;
 import ij.ImagePlus;
+import ij.Prefs;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.Roi;
@@ -201,6 +202,9 @@ public class Volume_Segmentation implements PlugIn {
 			IJ.showMessage("This Plugin is only supported on Windows machines!");
 			return;
 		}
+		
+		//Set black background preferences for proper particle analysis!
+		Prefs.blackBackground = true;
 
 		final int[] idList = WindowManager.getIDList();
 
